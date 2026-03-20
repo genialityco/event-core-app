@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { clientConfig } from "@/clients";
 import { Redirect, Stack, useRouter } from "expo-router";
 import { useAuth } from "@/context/AuthContext";
 import {
@@ -30,7 +31,7 @@ import { ImagePromoModal } from "@/components/ImagePromoModal"; // si lo sacas a
 const { width } = Dimensions.get("window");
 
 export default function ProtectedLayout() {
-  const [showPromo, setShowPromo] = useState(true);
+  const [showPromo, setShowPromo] = useState(clientConfig.promoModal?.enabled ?? false);
   const { isLoggedIn, isLoading, userId } = useAuth();
   const [surveys, setSurveys] = useState<Survey[]>([]);
   const [drawerVisible, setDrawerVisible] = useState(false);
@@ -323,14 +324,14 @@ export default function ProtectedLayout() {
           </View>
         </View>
       </Modal>
-      <ImagePromoModal
-        visible={showPromo}
-        onClose={() => setShowPromo(false)}
-        imageUri={
-          "https://firebasestorage.googleapis.com/v0/b/global-auth-49737.appspot.com/o/imagenACHO.jpeg?alt=media&token=a33b3f58-8a98-41e3-9e0b-dcb079ad99d8"
-        } // <-- tu imagen
-        ctaUrl={"https://esmosummit2026.acho.com.co/registro/"}
-      />
+      {clientConfig.promoModal?.enabled && (
+        <ImagePromoModal
+          visible={showPromo}
+          onClose={() => setShowPromo(false)}
+          imageUri={clientConfig.promoModal.imageUri}
+          ctaUrl={clientConfig.promoModal.ctaUrl}
+        />
+      )}
       <Stack screenOptions={{ headerShown: false }} />
     </View>
   );

@@ -1,16 +1,16 @@
-import React, { useCallback, useContext, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { View, StyleSheet } from "react-native";
 import { ActivityIndicator, Button, Text } from "react-native-paper";
 import RenderHighlights from "./RenderHighlights"; 
 import RenderEvents from "./RenderEvents";
 import { searchEvents, Event as ApiEvent } from "@/services/api/eventService";
-import { OrganizationContext } from "@/context/OrganizationContext";
+import { useOrganization } from "@/context/TenantContext";
 import { useFocusEffect } from "expo-router";
 import EventsHighlighs from "./EventsHighlighs";
 
 export default function EventsBeforeScreen() {
   const [activeTab, setActiveTab] = useState("pastEvents");
-  const { organization } = useContext(OrganizationContext);
+  const { organization } = useOrganization();
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);

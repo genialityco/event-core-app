@@ -1,33 +1,42 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { ThemeProvider, DefaultTheme } from "@react-navigation/native";
 import { Stack } from "expo-router";
 import { PaperProvider } from "react-native-paper";
 import theme from "@/theme";
 import { AuthProvider } from "@/context/AuthContext";
-// import * as SplashScreen from "expo-splash-screen";
-import { OrganizationProvider } from "@/context/OrganizationContext";
+import { TenantProvider } from "@/context/TenantContext";
+import { EventProvider } from "@/context/EventContext";
+import { FeatureFlagProvider } from "@/context/FeatureFlagContext";
 import { NotificationsProvider } from "@/context/NotificationsContext";
+import { initI18n } from "@/src/i18n";
 
 export default function RootLayout() {
-  // Evitar que el splash screen se cierre automáticamente
-  // React.useEffect(() => {
-  //   SplashScreen.preventAutoHideAsync();
-  // }, []);
+  const [i18nReady, setI18nReady] = useState(false);
+
+  useEffect(() => {
+    initI18n().then(() => setI18nReady(true));
+  }, []);
+
+  if (!i18nReady) return null;
 
   return (
-    <OrganizationProvider>
+    <TenantProvider>
+      <EventProvider>
       <AuthProvider>
-        <NotificationsProvider>
-        <PaperProvider theme={theme}>
-          <ThemeProvider value={DefaultTheme}>
-            <Stack screenOptions={{ headerShown: false }}>
-              <Stack.Screen name="(app)" />
-              <Stack.Screen name="login" />
-            </Stack>
-          </ThemeProvider>
-        </PaperProvider>
-        </NotificationsProvider>
+        <FeatureFlagProvider>
+          <NotificationsProvider>
+            <PaperProvider theme={theme}>
+              <ThemeProvider value={DefaultTheme}>
+                <Stack screenOptions={{ headerShown: false }}>
+                  <Stack.Screen name="(app)" />
+                  <Stack.Screen name="login" />
+                </Stack>
+              </ThemeProvider>
+            </PaperProvider>
+          </NotificationsProvider>
+        </FeatureFlagProvider>
       </AuthProvider>
-    </OrganizationProvider>
+      </EventProvider>
+    </TenantProvider>
   );
 }

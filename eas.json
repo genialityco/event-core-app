@@ -7,15 +7,41 @@
     "development": {
       "developmentClient": true,
       "distribution": "internal",
-      "channel": "development"
+      "channel": "development",
+      "env": {
+        "CLIENT": "acho",
+        "EXPO_PUBLIC_CLIENT": "acho"
+      }
     },
     "preview": {
       "distribution": "internal",
-      "channel": "preview"
+      "channel": "preview",
+      "env": {
+        "CLIENT": "acho",
+        "EXPO_PUBLIC_CLIENT": "acho"
+      }
     },
     "production": {
       "autoIncrement": true,
-      "channel": "production"
+      "channel": "production",
+      "env": {
+        "CLIENT": "acho",
+        "EXPO_PUBLIC_CLIENT": "acho"
+      }
+    },
+    "ails-news-development": {
+      "extends": "development",
+      "env": {
+        "CLIENT": "ails-news",
+        "EXPO_PUBLIC_CLIENT": "ails-news"
+      }
+    },
+    "ails-news-production": {
+      "extends": "production",
+      "env": {
+        "CLIENT": "ails-news",
+        "EXPO_PUBLIC_CLIENT": "ails-news"
+      }
     }
   },
   "submit": {

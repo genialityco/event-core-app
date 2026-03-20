@@ -13,45 +13,68 @@ import {
 import { Button, TextInput as PaperInput } from "react-native-paper";
 import { useAuth } from "@/context/AuthContext";
 import { router } from "expo-router";
+import { clientConfig } from "@/clients";
 import Icon from "react-native-vector-icons/MaterialIcons";
 
+const isOtp = clientConfig.authMethods.includes("otp");
+
 export default function LoginScreen() {
-  const { signIn, resetPassword } = useAuth();
+  const { signIn, signInDirect, resetPassword } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [isPasswordVisible, setIsPasswordVisible] = useState(false); // Estado para visibilidad de contraseña
-  const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [resetEmail, setResetEmail] = useState("");
 
-  // Manejar inicio de sesión
-  const handleLogin = async () => {
+  const validateEmail = (value: string) =>
+    /\S+@\S+\.\S+/.test(value);
+
+  // ── Flujo directo: solo correo → custom token → ingreso ──
+  const handleDirectLogin = async () => {
+    if (!email) {
+      Alert.alert("Error", "Por favor ingresa tu correo electrónico.");
+      return;
+    }
+    if (!validateEmail(email)) {
+      Alert.alert("Error", "Ingresa un correo electrónico válido.");
+      return;
+    }
+
+    setIsLoading(true);
+    const success = await signInDirect(email.trim().toLowerCase());
+    setIsLoading(false);
+
+    if (success) {
+      router.replace("/(app)/(tabs)/home");
+    }
+  };
+
+  // ── Flujo email+contraseña (clientes legacy) ──
+  const handlePasswordLogin = async () => {
     if (!email || !password) {
       Alert.alert("Error", "Por favor, completa todos los campos.");
       return;
     }
-
-    if (!/\S+@\S+\.\S+/.test(email)) {
-      Alert.alert("Error", "Por favor, ingresa un correo electrónico válido.");
+    if (!validateEmail(email)) {
+      Alert.alert("Error", "Ingresa un correo electrónico válido.");
       return;
     }
 
-    setIsLoggingIn(true);
+    setIsLoading(true);
     const success = await signIn(email, password);
-    setIsLoggingIn(false);
+    setIsLoading(false);
 
     if (success) {
       router.push("/(app)/(tabs)/home");
     }
   };
 
-  // Manejar la recuperación de contraseña
   const handleForgotPassword = async () => {
     if (!resetEmail) {
       Alert.alert("Error", "Por favor, ingresa tu correo electrónico.");
       return;
     }
-
     try {
       await resetPassword(resetEmail);
       setIsModalVisible(false);
@@ -66,16 +89,18 @@ export default function LoginScreen() {
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <ImageBackground
-        source={require("../assets/images/APP_ACHO_SLIDER_01.png")}
+        source={require("../assets/icons/APP-CUMBRE_SPLASH-REGISTRO.png")}
         style={styles.backgroundImage}
         resizeMode="cover"
       >
         <View style={styles.overlay} />
 
         <View style={styles.card}>
-          <Text style={styles.headerText}>Bienvenido a la ACHO</Text>
+          <Text style={styles.headerText}>Bienvenido a {clientConfig.name}</Text>
           <Text style={styles.descriptionText}>
-            Si ya te has registrado, por favor continúa iniciando sesión
+            {isOtp
+              ? "Ingresa tu correo y te enviaremos un código de acceso"
+              : "Si ya te has registrado, por favor continúa iniciando sesión"}
           </Text>
 
           <PaperInput
@@ -89,36 +114,39 @@ export default function LoginScreen() {
             left={<PaperInput.Icon icon="email" />}
           />
 
-          <PaperInput
-            label="Contraseña"
-            mode="outlined"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry={!isPasswordVisible}
-            style={styles.input}
-            left={<PaperInput.Icon icon="lock" />}
-            right={
-              <PaperInput.Icon
-                icon={() => (
-                  <Icon
-                    name={isPasswordVisible ? "visibility" : "visibility-off"}
-                    size={24}
-                  />
-                )}
-                onPress={() => setIsPasswordVisible(!isPasswordVisible)}
-              />
-            }
-          />
+          {/* Campo contraseña solo para flujo emailPassword */}
+          {!isOtp && (
+            <PaperInput
+              label="Contraseña"
+              mode="outlined"
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry={!isPasswordVisible}
+              style={styles.input}
+              left={<PaperInput.Icon icon="lock" />}
+              right={
+                <PaperInput.Icon
+                  icon={() => (
+                    <Icon
+                      name={isPasswordVisible ? "visibility" : "visibility-off"}
+                      size={24}
+                    />
+                  )}
+                  onPress={() => setIsPasswordVisible(!isPasswordVisible)}
+                />
+              }
+            />
+          )}
 
           <Button
             mode="contained"
-            onPress={handleLogin}
-            loading={isLoggingIn}
-            disabled={isLoggingIn}
+            onPress={isOtp ? handleDirectLogin : handlePasswordLogin}
+            loading={isLoading}
+            disabled={isLoading}
             style={styles.loginButton}
             contentStyle={styles.buttonContent}
           >
-            Iniciar Sesión
+            {isOtp ? "Ingresar" : "Iniciar Sesión"}
           </Button>
 
           <TouchableOpacity onPress={() => router.push("/register")}>
@@ -127,50 +155,55 @@ export default function LoginScreen() {
             </Text>
           </TouchableOpacity>
 
-          <TouchableOpacity onPress={() => setIsModalVisible(true)}>
-            <Text style={styles.forgotPasswordText}>Olvidé mi contraseña</Text>
-          </TouchableOpacity>
+          {/* Recuperar contraseña solo para flujo emailPassword */}
+          {!isOtp && (
+            <TouchableOpacity onPress={() => setIsModalVisible(true)}>
+              <Text style={styles.forgotPasswordText}>Olvidé mi contraseña</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
-        {/* Modal para la recuperación de contraseña */}
-        <Modal
-          visible={isModalVisible}
-          transparent={true}
-          animationType="slide"
-        >
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>Recuperar Contraseña</Text>
+        {/* Modal recuperación de contraseña (solo emailPassword) */}
+        {!isOtp && (
+          <Modal
+            visible={isModalVisible}
+            transparent={true}
+            animationType="slide"
+          >
+            <View style={styles.modalOverlay}>
+              <View style={styles.modalContent}>
+                <Text style={styles.modalTitle}>Recuperar Contraseña</Text>
 
-              <PaperInput
-                label="Correo electrónico"
-                mode="outlined"
-                value={resetEmail}
-                onChangeText={setResetEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                style={styles.inputModal}
-                left={<PaperInput.Icon icon="email" />}
-              />
+                <PaperInput
+                  label="Correo electrónico"
+                  mode="outlined"
+                  value={resetEmail}
+                  onChangeText={setResetEmail}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  style={styles.inputModal}
+                  left={<PaperInput.Icon icon="email" />}
+                />
 
-              <Button
-                mode="contained"
-                onPress={handleForgotPassword}
-                style={styles.resetButton}
-              >
-                Enviar Enlace
-              </Button>
+                <Button
+                  mode="contained"
+                  onPress={handleForgotPassword}
+                  style={styles.resetButton}
+                >
+                  Enviar Enlace
+                </Button>
 
-              <Button
-                mode="text"
-                onPress={() => setIsModalVisible(false)}
-                style={styles.cancelButton}
-              >
-                Cancelar
-              </Button>
+                <Button
+                  mode="text"
+                  onPress={() => setIsModalVisible(false)}
+                  style={styles.cancelButton}
+                >
+                  Cancelar
+                </Button>
+              </View>
             </View>
-          </View>
-        </Modal>
+          </Modal>
+        )}
       </ImageBackground>
     </KeyboardAvoidingView>
   );

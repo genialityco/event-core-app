@@ -1,4 +1,7 @@
 import axios from "axios";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { clientConfig } from "@/clients";
+import { auth } from "@/services/firebaseConfig";
 
 export interface Data<T> {
   items: T[];
@@ -10,39 +13,46 @@ export interface SearchData<T> {
   data: Data<T>;
 }
 
-// Crea la instancia de Axios
-// https://lobster-app-uy9hx.ondigitalocean.app api
-// http://10.5.0.2:3000 local red
-// http://localhost:3000 local
-
 const api = axios.create({
-  baseURL: "https://lobster-app-uy9hx.ondigitalocean.app",
+  baseURL: clientConfig.apiUrl,
   timeout: 10000,
   headers: {
     "Content-Type": "application/json",
   },
 });
 
-// Interceptor de solicitudes
+// Interceptor de solicitudes — inyecta token Firebase, x-bundle-id y x-organization-id
 api.interceptors.request.use(
-  (config) => {
-    // Lógica antes de que se envíe la solicitud
+  async (config) => {
+    // 1. Firebase Auth token
+    const user = auth.currentUser;
+    if (user) {
+      try {
+        const token = await user.getIdToken();
+        config.headers.Authorization = `Bearer ${token}`;
+      } catch {
+        // Token refresh failed — request continues without auth header
+      }
+    }
+
+    // 2. Bundle ID — UX hint for tenant resolution (NOT security mechanism)
+    config.headers["x-bundle-id"] = clientConfig.bundleId;
+
+    // 3. Organization ID — for explicit multi-org context switching
+    const orgId = await AsyncStorage.getItem("x-organization-id");
+    if (orgId) {
+      config.headers["x-organization-id"] = orgId;
+    }
+
     return config;
   },
-  (error) => {
-    // Manejo de error antes de que la solicitud se envíe
-    return Promise.reject(error);
-  },
+  (error) => Promise.reject(error),
 );
 
 // Interceptor de respuestas
 api.interceptors.response.use(
-  (response) => {
-    // Cualquier procesamiento antes de devolver la respuesta
-    return response;
-  },
+  (response) => response,
   (error) => {
-    // Manejo de errores global
     console.error("Error en la respuesta:", error);
     return Promise.reject(error);
   },

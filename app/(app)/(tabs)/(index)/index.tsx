@@ -1,8 +1,8 @@
-import React, { useState, useContext, useCallback } from "react";
+import React, { useState, useCallback } from "react";
 import { ScrollView, StyleSheet, View, Image } from "react-native";
 import { Card, Button, Text, ActivityIndicator } from "react-native-paper";
 import { router } from "expo-router";
-import { OrganizationContext } from "@/context/OrganizationContext";
+import { useOrganization } from "@/context/TenantContext";
 import { useAuth } from "@/context/AuthContext";
 import { searchEvents } from "@/services/api/eventService";
 import { searchAttendees } from "@/services/api/attendeeService";
@@ -59,7 +59,7 @@ export default function EventosScreen() {
   const [isMemberActive, setIsMemberActive] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const { organization } = useContext(OrganizationContext);
+  const { organization } = useOrganization();
   const { userId } = useAuth();
 
   const fetchEventsAndAttendees = async (page = 1) => {

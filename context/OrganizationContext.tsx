@@ -1,34 +1,41 @@
-import React, { ReactNode, createContext, useState, useContext } from "react";
+/**
+ * @deprecated Use TenantContext (useTenant / useOrganization from TenantContext) instead.
+ * This file exists for backward compatibility only — do not import new code here.
+ */
+export {
+  useOrganization,
+  TenantProvider as OrganizationProvider,
+} from "./TenantContext";
 
-// Crear el contexto
-export const OrganizationContext = createContext({
+// Some files use useContext(OrganizationContext) directly — provide a shim context.
+// New code should use useOrganization() or useTenant() hooks instead.
+import React, { createContext, useContext } from "react";
+import { useTenant } from "./TenantContext";
+
+const OrganizationContext = createContext<{
+  organization: { _id: string; [key: string]: any };
+  updateOrganization: (org: any) => void;
+}>({
   organization: { _id: "" },
-  updateOrganization: (newOrganization: any) => {},
+  updateOrganization: () => {},
 });
 
-interface OrganizationProviderProps {
-  children: ReactNode;
-}
+export { OrganizationContext };
 
-export const OrganizationProvider = ({
-  children,
-}: OrganizationProviderProps) => {
-  const [organization, setOrganization] = useState({
-    _id: "66f1d236ee78a23c67fada2a",
-  });
-
-  // Función para actualizar la organización
-  const updateOrganization = (newOrganization: React.SetStateAction<{ _id: string }>) => {
-    setOrganization(newOrganization);
-  };
-
+/**
+ * Bridge component — renders TenantContext value into the legacy OrganizationContext shape.
+ * Wrap consuming subtrees that use useContext(OrganizationContext) directly.
+ */
+export const OrganizationContextBridge = ({ children }: { children: React.ReactNode }) => {
+  const { organization, organizationId, setOrganizationId } = useTenant();
   return (
-    <OrganizationContext.Provider value={{ organization, updateOrganization }}>
+    <OrganizationContext.Provider
+      value={{
+        organization: organization ?? { _id: organizationId ?? "" },
+        updateOrganization: (org: any) => setOrganizationId(org._id),
+      }}
+    >
       {children}
     </OrganizationContext.Provider>
   );
-};
-
-export const useOrganization = () => {
-  return useContext(OrganizationContext);
 };

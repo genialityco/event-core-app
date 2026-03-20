@@ -4,10 +4,12 @@ import { auth, set, ref, db } from "../services/firebaseConfig";
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
+  signInWithCustomToken,
   signOut as firebaseSignOut,
   deleteUser as firebaseDeleteUser,
   sendPasswordResetEmail,
 } from "firebase/auth";
+import { loginDirect, sendOtpCode, verifyOtpCode, registerWithEmail } from "@/services/api/authService";
 import { ReactNode } from "react";
 import { createUser, searchUsers } from "@/services/api/userService";
 import { createMember } from "@/services/api/memberService";
@@ -27,6 +29,12 @@ const AuthContext = createContext<{
     organizationId: string,
     memberData: object
   ) => Promise<boolean>;
+  /** Registro para clientes OTP: solo nombre + correo, sin contraseña visible */
+  signUpOtp: (email: string, name: string, organizationId: string) => Promise<boolean>;
+  /** Login directo por correo sin código (custom token) */
+  signInDirect: (email: string) => Promise<boolean>;
+  /** Verifica el código OTP y firma con custom token de Firebase */
+  signInWithOtp: (email: string, code: string) => Promise<boolean>;
   signOut: () => Promise<void>;
   deleteAccount: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
@@ -39,6 +47,9 @@ const AuthContext = createContext<{
   uid: null,
   signIn: async () => false,
   signUp: async () => false,
+  signUpOtp: async () => false,
+  signInDirect: async () => false,
+  signInWithOtp: async () => false,
   signOut: async () => {},
   deleteAccount: async () => {},
   resetPassword: async () => {},
@@ -221,6 +232,64 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   };
 
+  // Registro OTP: crea cuenta en backend y envía OTP para primer ingreso
+  const signUpOtp = async (
+    email: string,
+    name: string,
+    organizationId: string
+  ): Promise<boolean> => {
+    try {
+      await registerWithEmail(email, name, organizationId);
+      return true;
+    } catch (error: any) {
+      handleAuthError(error);
+      return false;
+    }
+  };
+
+  // Login directo por correo — sin código OTP
+  const signInDirect = async (email: string): Promise<boolean> => {
+    try {
+      const { token } = await loginDirect(email);
+      const userCredential = await signInWithCustomToken(auth, token);
+      await AsyncStorage.multiSet([["userUid", userCredential.user.uid]]);
+      setAuthState((prev) => ({
+        ...prev,
+        isLoggedIn: true,
+        uid: userCredential.user.uid,
+        authError: null,
+      }));
+      await fetchUserByFirebaseUid(userCredential.user.uid);
+      return true;
+    } catch (error: any) {
+      handleAuthError(error);
+      return false;
+    }
+  };
+
+  // Verifica el código OTP y firma con el custom token que retorna el backend
+  const signInWithOtp = async (
+    email: string,
+    code: string
+  ): Promise<boolean> => {
+    try {
+      const { token } = await verifyOtpCode(email, code);
+      const userCredential = await signInWithCustomToken(auth, token);
+      await AsyncStorage.multiSet([["userUid", userCredential.user.uid]]);
+      setAuthState((prev) => ({
+        ...prev,
+        isLoggedIn: true,
+        uid: userCredential.user.uid,
+        authError: null,
+      }));
+      await fetchUserByFirebaseUid(userCredential.user.uid);
+      return true;
+    } catch (error: any) {
+      handleAuthError(error);
+      return false;
+    }
+  };
+
   // Función de cierre de sesión
   const signOut = async () => {
     try {
@@ -323,6 +392,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           setAuthState((prevState) => ({ ...prevState, userId: id })),
         signIn,
         signUp,
+        signUpOtp,
+        signInDirect,
+        signInWithOtp,
         signOut,
         deleteAccount,
         resetPassword,
