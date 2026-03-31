@@ -18,7 +18,9 @@ export interface OrganizationFeatures {
   certificate?: boolean;
   posters?: boolean;
   info?: boolean;
-  [key: string]: boolean | undefined;
+  /** Tab que se muestra por defecto al iniciar sesión. null/undefined = primer tab habilitado. */
+  defaultModule?: string | null;
+  [key: string]: boolean | string | null | undefined;
 }
 
 export interface OrganizationData {

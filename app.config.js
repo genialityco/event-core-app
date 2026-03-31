@@ -2,13 +2,38 @@ const fs = require('fs');
 const path = require('path');
 
 // Para dev local usa EXPO_PUBLIC_CLIENT; para EAS build usa CLIENT
-const CLIENT = process.env.CLIENT || process.env.EXPO_PUBLIC_CLIENT || 'acho';
+const CLIENT = process.env.CLIENT || process.env.EXPO_PUBLIC_CLIENT || 'ails-events';
 
 /** Incluye la propiedad solo si el archivo existe en disco */
 const ifExists = (filePath) =>
   fs.existsSync(path.resolve(__dirname, filePath)) ? filePath : undefined;
 
 const clients = {
+  'ails-events': {
+    name: 'AILS Events',
+    slug: 'ails-events',
+    scheme: 'ailsevents',
+    version: '1.0.0',
+    buildNumber: '1',
+    versionCode: 1,
+    runtimeVersion: '1.0.0',
+    ios: {
+      bundleIdentifier: 'com.geniality.ailsevents',
+      googleServicesFile: './GoogleService-Info-ails.plist',
+      splash: './assets/icons/APP-CUMBRE_SPLASH.png',
+    },
+    android: {
+      package: 'com.geniality.ailsevents',
+      googleServicesFile: './google-services-ails.json',
+      icon: './assets/icons/icon-android.png',
+      splash: './assets/icons/APP-CUMBRE_SPLASH.png',
+    },
+    eas: {
+      projectId: '0a723d68-5afc-4d64-89df-3f0d29d8a89e',
+      owner: 'geniality',
+      updatesUrl: 'https://u.expo.dev/0a723d68-5afc-4d64-89df-3f0d29d8a89e',
+    },
+  },
   // acho: {
   //   name: 'AchoApp',
   //   slug: 'gen-notifications',
@@ -34,39 +59,9 @@ const clients = {
   //     updatesUrl: 'https://u.expo.dev/7b771362-c331-49ce-94fd-f43d171a309e',
   //   },
   // },
-  'ails-news': {
-    name: 'AILS News',
-    slug: 'ails-news',
-    scheme: 'ailsnews',
-    version: '1.0.0',
-    buildNumber: '1',
-    versionCode: 1,
-    runtimeVersion: '1.0.0',
-    ios: {
-      bundleIdentifier: 'com.geniality.ailsnews',
-      // TODO: agregar GoogleService-Info.plist de ails-news Firebase
-      googleServicesFile: './GoogleService-Info-ails.plist',
-      // TODO: reemplazar con imagen de splash de AILS News
-      splash: './assets/icons/APP-CUMBRE_SPLASH.png',
-    },
-    android: {
-      package: 'com.geniality.ailsnews',
-      // TODO: agregar google-services.json de ails-news Firebase
-      googleServicesFile: './google-services-ails.json',
-      // TODO: reemplazar con ícono de AILS News
-      icon: './assets/icons/icon-android.png',
-      splash: './assets/icons/APP-CUMBRE_SPLASH.png',
-    },
-    eas: {
-      // TODO: crear proyecto en EAS y actualizar el projectId
-      projectId: '7b771362-c331-49ce-94fd-f43d171a309e',
-      owner: 'geniality',
-      updatesUrl: 'https://u.expo.dev/7b771362-c331-49ce-94fd-f43d171a309e',
-    },
-  },
 };
 
-const cfg = clients[CLIENT] ?? clients.acho;
+const cfg = clients[CLIENT] ?? clients['ails-events'];
 
 module.exports = {
   expo: {

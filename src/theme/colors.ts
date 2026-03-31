@@ -1,6 +1,6 @@
 export const colors = {
-  primary: '#1A73E8',
-  primaryDark: '#1558B0',
+  primary: '#031249',
+  primaryDark: '#020d30',
   secondary: '#F5A623',
   background: '#F8F9FA',
   surface: '#FFFFFF',
@@ -16,7 +16,7 @@ export const colors = {
   border: '#E0E0E0',
   divider: '#EEEEEE',
   tabBar: {
-    active: '#1A73E8',
+    active: '#031249',
     inactive: '#9E9E9E',
     background: '#FFFFFF',
   },

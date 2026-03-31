@@ -11,7 +11,7 @@ import {
   RefreshControl,
 } from 'react-native';
 import { useTranslation } from '@/src/i18n';
-import { colors, spacing, typography } from '@/src/theme';
+import { colors, spacing, typography, useBrandedColors } from '@/src/theme';
 import { useEvent } from '@/context/EventContext';
 import { get } from '@/src/core';
 
@@ -33,16 +33,16 @@ interface Hotel {
 
 // ─── Hotel Card ───────────────────────────────────────────────────────────────
 
-const HotelCard: React.FC<{ hotel: Hotel; t: (key: string) => string }> = ({ hotel, t }) => {
+const HotelCard: React.FC<{ hotel: Hotel; t: (key: string) => string; primary: string }> = ({ hotel, t, primary }) => {
   const openUrl = (url: string) => {
     if (url) Linking.openURL(url).catch(() => {});
   };
 
   return (
-    <View style={[styles.card, hotel.isMain && styles.cardMain]}>
+    <View style={[styles.card, hotel.isMain && [styles.cardMain, { borderColor: primary }]]}>
       {/* Main badge */}
       {hotel.isMain && (
-        <View style={styles.mainBadge}>
+        <View style={[styles.mainBadge, { backgroundColor: primary }]}>
           <Text style={styles.mainBadgeText}>{t('hotels.mainBadge')}</Text>
         </View>
       )}
@@ -95,7 +95,7 @@ const HotelCard: React.FC<{ hotel: Hotel; t: (key: string) => string }> = ({ hot
           <View style={styles.actions}>
             {!!hotel.bookingUrl && (
               <TouchableOpacity
-                style={[styles.actionBtn, styles.actionBtnPrimary]}
+                style={[styles.actionBtn, { backgroundColor: primary, borderColor: primary }]}
                 onPress={() => openUrl(hotel.bookingUrl!)}
                 activeOpacity={0.8}
               >
@@ -104,11 +104,11 @@ const HotelCard: React.FC<{ hotel: Hotel; t: (key: string) => string }> = ({ hot
             )}
             {!!hotel.hotelUrl && (
               <TouchableOpacity
-                style={styles.actionBtn}
+                style={[styles.actionBtn, { borderColor: primary }]}
                 onPress={() => openUrl(hotel.hotelUrl!)}
                 activeOpacity={0.8}
               >
-                <Text style={styles.actionBtnText}>{t('hotels.websiteButton')}</Text>
+                <Text style={[styles.actionBtnText, { color: primary }]}>{t('hotels.websiteButton')}</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -123,6 +123,7 @@ const HotelCard: React.FC<{ hotel: Hotel; t: (key: string) => string }> = ({ hot
 export const HotelsScreen: React.FC = () => {
   const { t } = useTranslation();
   const { activeEventId } = useEvent();
+  const bc = useBrandedColors();
 
   const [hotels, setHotels] = useState<Hotel[]>([]);
   const [loading, setLoading] = useState(true);
@@ -155,7 +156,7 @@ export const HotelsScreen: React.FC = () => {
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color={colors.primary} />
+        <ActivityIndicator size="large" color={bc.primary} />
       </View>
     );
   }
@@ -164,7 +165,7 @@ export const HotelsScreen: React.FC = () => {
     return (
       <View style={styles.centered}>
         <Text style={styles.errorText}>{error}</Text>
-        <TouchableOpacity style={styles.retryBtn} onPress={() => loadHotels()}>
+        <TouchableOpacity style={[styles.retryBtn, { backgroundColor: bc.primary }]} onPress={() => loadHotels()}>
           <Text style={styles.retryBtnText}>{t('base.retry')}</Text>
         </TouchableOpacity>
       </View>
@@ -183,8 +184,8 @@ export const HotelsScreen: React.FC = () => {
         <RefreshControl
           refreshing={refreshing}
           onRefresh={() => loadHotels(true)}
-          colors={[colors.primary]}
-          tintColor={colors.primary}
+          colors={[bc.primary]}
+          tintColor={bc.primary}
         />
       }
     >
@@ -202,7 +203,7 @@ export const HotelsScreen: React.FC = () => {
       ) : (
         <>
           {/* Main hotel */}
-          {mainHotel && <HotelCard key={mainHotel._id} hotel={mainHotel} t={t} />}
+          {mainHotel && <HotelCard key={mainHotel._id} hotel={mainHotel} t={t} primary={bc.primary} />}
 
           {/* Other hotels */}
           {otherHotels.length > 0 && (
@@ -213,7 +214,7 @@ export const HotelsScreen: React.FC = () => {
                 </View>
               )}
               {otherHotels.map((hotel) => (
-                <HotelCard key={hotel._id} hotel={hotel} t={t} />
+                <HotelCard key={hotel._id} hotel={hotel} t={t} primary={bc.primary} />
               ))}
             </>
           )}

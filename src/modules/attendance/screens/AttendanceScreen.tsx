@@ -9,7 +9,7 @@ import {
   RefreshControl,
 } from 'react-native';
 import { useTranslation } from '@/src/i18n';
-import { colors, spacing, typography } from '@/src/theme';
+import { colors, spacing, typography, useBrandedColors } from '@/src/theme';
 import { useEvent } from '@/context/EventContext';
 import { get, post, del } from '@/src/core';
 
@@ -71,7 +71,8 @@ const SessionRow: React.FC<{
   loading: boolean;
   onAttend: () => void;
   onCancel: () => void;
-}> = ({ session, isAttending, loading, onAttend, onCancel }) => {
+  primary: string;
+}> = ({ session, isAttending, loading, onAttend, onCancel, primary }) => {
   const { t } = useTranslation();
 
   return (
@@ -93,15 +94,15 @@ const SessionRow: React.FC<{
           <Text style={styles.rowMeta}>📍 {session.room || session.agendaRoom}</Text>
         )}
         {!!session.typeSession && (
-          <View style={styles.typePill}>
-            <Text style={styles.typePillText}>{session.typeSession}</Text>
+          <View style={[styles.typePill, { backgroundColor: primary + '18' }]}>
+            <Text style={[styles.typePillText, { color: primary }]}>{session.typeSession}</Text>
           </View>
         )}
       </View>
 
       {/* Right: attend button */}
       <TouchableOpacity
-        style={[styles.btn, isAttending ? styles.btnConfirmed : styles.btnPending]}
+        style={[styles.btn, isAttending ? styles.btnConfirmed : [styles.btnPending, { backgroundColor: primary }]]}
         onPress={isAttending ? onCancel : onAttend}
         disabled={loading}
         activeOpacity={0.75}
@@ -123,6 +124,7 @@ const SessionRow: React.FC<{
 export const AttendanceScreen: React.FC = () => {
   const { t } = useTranslation();
   const { activeEventId } = useEvent();
+  const bc = useBrandedColors();
 
   const [sessions, setSessions] = useState<AttendanceSession[]>([]);
   const [myAttendances, setMyAttendances] = useState<string[]>([]);
@@ -206,7 +208,7 @@ export const AttendanceScreen: React.FC = () => {
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color={colors.primary} />
+        <ActivityIndicator size="large" color={bc.primary} />
       </View>
     );
   }
@@ -215,7 +217,7 @@ export const AttendanceScreen: React.FC = () => {
     return (
       <View style={styles.centered}>
         <Text style={styles.errorText}>{error}</Text>
-        <TouchableOpacity style={styles.retryBtn} onPress={() => loadData()}>
+        <TouchableOpacity style={[styles.retryBtn, { backgroundColor: bc.primary }]} onPress={() => loadData()}>
           <Text style={styles.retryBtnText}>{t('base.retry')}</Text>
         </TouchableOpacity>
       </View>
@@ -245,8 +247,8 @@ export const AttendanceScreen: React.FC = () => {
         <RefreshControl
           refreshing={refreshing}
           onRefresh={() => loadData(true)}
-          colors={[colors.primary]}
-          tintColor={colors.primary}
+          colors={[bc.primary]}
+          tintColor={bc.primary}
         />
       }
     >
@@ -264,7 +266,7 @@ export const AttendanceScreen: React.FC = () => {
         </View>
         <View style={styles.summaryDivider} />
         <View style={styles.summaryItem}>
-          <Text style={[styles.summaryNumber, { color: colors.primary }]}>
+          <Text style={[styles.summaryNumber, { color: bc.primary }]}>
             {sessions.length - confirmed}
           </Text>
           <Text style={styles.summaryLabel}>{t('attendance.pending')}</Text>
@@ -302,6 +304,7 @@ export const AttendanceScreen: React.FC = () => {
                     loading={!!btnLoading[session._id]}
                     onAttend={() => handleAttend(session._id)}
                     onCancel={() => handleCancel(session._id)}
+                    primary={bc.primary}
                   />
                   {idx < daySessions.length - 1 && <View style={styles.separator} />}
                 </React.Fragment>

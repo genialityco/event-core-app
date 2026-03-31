@@ -1,14 +1,13 @@
-import React from 'react';
-import { Tabs } from 'expo-router';
-import { useWindowDimensions } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { Tabs, useRouter } from 'expo-router';
 import { TabBarIcon } from '@/components/navigation/TabBarIcon';
 import { appConfig, type ModuleId } from '@/src/config/appConfig';
 import { moduleRegistry } from '@/src/modules/registry';
-import { colors } from '@/src/theme';
 import { useFeatureFlags } from '@/context/FeatureFlagContext';
 import { useTranslation } from '@/src/i18n';
 import { useTenant } from '@/context/TenantContext';
 import { AppHeader } from '@/components/AppHeader';
+import { ScrollableTabBar } from '@/components/navigation/ScrollableTabBar';
 
 // Todos los módulos registrados — necesarios para que Expo Router oculte los no activos
 const ALL_MODULES: ModuleId[] = [
@@ -25,33 +24,38 @@ const ALL_MODULES: ModuleId[] = [
 const LEGACY_TABS = ['home', 'eventosbefore', '(index)', 'achoinfo', 'menu'];
 
 export default function TabLayout() {
-  const { width } = useWindowDimensions();
-  const isLargeScreen = width > 768;
   const { isEnabled } = useFeatureFlags();
   const { t } = useTranslation();
-  const { organization } = useTenant();
+  const { organization, isLoading } = useTenant();
+  const router = useRouter();
+  const hasNavigated = useRef(false);
 
-  const tabBarColor = (organization?.branding as any)?.tabBarColor ?? '#ffffff';
-
-  // Un módulo se muestra si:
-  // 1. Está en appConfig.enabledModules (instalado en la app)
-  // 2. La organización tiene el feature flag activo en backend
   const installedModules = new Set<string>(appConfig.enabledModules);
+
+  // Navegar al tab configurado como default una sola vez, después de que carga la org
+  useEffect(() => {
+    if (isLoading || !organization || hasNavigated.current) return;
+
+    const defaultModule = organization.features?.defaultModule;
+    if (!defaultModule) return;
+
+    const mod = moduleRegistry[defaultModule as ModuleId];
+    const isAvailable =
+      installedModules.has(defaultModule) &&
+      mod &&
+      isEnabled(mod.featureFlag);
+
+    if (isAvailable) {
+      hasNavigated.current = true;
+      router.replace(`/(app)/(tabs)/${defaultModule}` as any);
+    }
+  }, [isLoading, organization]);
 
   return (
     <Tabs
+      tabBar={(props) => <ScrollableTabBar {...props} />}
       screenOptions={{
-        tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.text.secondary,
-        tabBarStyle: {
-          borderRadius: isLargeScreen ? 40 : 20,
-          margin: isLargeScreen ? 10 : 5,
-          paddingHorizontal: isLargeScreen ? 20 : 5,
-          backgroundColor: tabBarColor,
-        },
         header: () => <AppHeader />,
-        headerStyle: { backgroundColor: '#F0F0F0', height: 56 },
-        tabBarLabelStyle: { fontSize: isLargeScreen ? 16 : 12 },
       }}
     >
       {ALL_MODULES.map((moduleId) => {
@@ -86,19 +90,8 @@ export default function TabLayout() {
         );
       })}
 
-      {/* Tab de sistema — siempre visible, no controlado por feature flags */}
-      <Tabs.Screen
-        name="settings"
-        options={{
-          title: t('settings.title'),
-          tabBarIcon: ({ color, focused }) => (
-            <TabBarIcon
-              name={focused ? 'settings' : 'settings-outline'}
-              color={color}
-            />
-          ),
-        }}
-      />
+      {/* Settings: accesible desde el ícono del header, oculto del tab bar */}
+      <Tabs.Screen name="settings" options={{ href: null }} />
 
       {LEGACY_TABS.map((name) => (
         <Tabs.Screen key={name} name={name} options={{ href: null }} />

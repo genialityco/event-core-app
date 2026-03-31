@@ -84,6 +84,7 @@ const es = {
   speaker: {
     title: 'Conferencista',
     sessions: 'Sesiones',
+    noSessions: 'Sin sesiones asignadas',
     international: 'Internacional',
   },
 

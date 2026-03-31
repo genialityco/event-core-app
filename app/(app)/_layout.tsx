@@ -15,7 +15,8 @@ import CustomDrawer from "@/components/CustomDrawer";
 import LinkifyText from "@/app/utils/LinkifyText";
 import { db, ref, onValue } from "@/services/firebaseConfig";
 import { useOrganization } from "@/context/OrganizationContext";
-import { Survey, searchSurveys } from "@/services/api/surveyService";
+import { Survey, fetchSurveysByEvent } from "@/services/api/surveyService";
+import { useEvent } from "@/context/EventContext";
 import * as Notifications from "expo-notifications";
 import * as Device from "expo-device";
 import { updateExpoPushToken } from "@/services/api/userService";
@@ -40,6 +41,7 @@ export default function ProtectedLayout() {
     null,
   );
   const { organization } = useOrganization();
+  const { activeEventId } = useEvent();
   const notificationListener = useRef<Notifications.Subscription | null>(null);
   const responseListener = useRef<Notifications.Subscription | null>(null);
   const { addNotification, markAsRead } = useNotifications();
@@ -47,10 +49,10 @@ export default function ProtectedLayout() {
   const router = useRouter();
 
   const fetchSurveys = async () => {
+    if (!activeEventId) return;
     try {
-      const filters = { organizationId: organization._id };
-      const response = await searchSurveys(filters);
-      setSurveys(response.data.items);
+      const response = await fetchSurveysByEvent(activeEventId);
+      setSurveys(response.data?.items ?? response.data ?? []);
     } catch (error) {
       console.error("Error fetching surveys:", error);
     }
@@ -58,7 +60,7 @@ export default function ProtectedLayout() {
 
   const registerAndSavePushToken = async () => {
     if (!Device.isDevice) {
-      console.error(
+      console.log(
         "Debe usar un dispositivo físico para recibir notificaciones push.",
       );
       return;
@@ -115,8 +117,8 @@ export default function ProtectedLayout() {
           ],
         );
       }
-    } catch (error) {
-      console.error("Error verificando actualizaciones OTA:", error);
+    } catch {
+      // No disponible en Expo Go ni en builds de desarrollo
     }
   };
 
@@ -193,29 +195,33 @@ export default function ProtectedLayout() {
     verifyAppVersion();
   }, []);
 
+  // Inicialización única: SplashScreen + delay visual (solo al montar)
   useEffect(() => {
-    async function prepareApp() {
+    async function initSplash() {
       try {
-        // Evita que la splash screen se oculte automáticamente
         await SplashScreen.preventAutoHideAsync();
-
-        if (userId && organization) {
-          await fetchSurveys();
-          await registerAndSavePushToken();
-        }
-
-        // Simula una pequeña espera para garantizar transiciones suaves
         await new Promise((resolve) => setTimeout(resolve, 1000));
-      } catch (e) {
-        console.error("Error durante la inicialización de la app:", e);
+      } catch {
+        // ignore
       } finally {
         setIsAppReady(true);
-        await SplashScreen.hideAsync();
+        await SplashScreen.hideAsync().catch(() => {});
       }
     }
+    initSplash();
+  }, []);
 
-    prepareApp();
+  // Carga de datos cuando el usuario y org están disponibles
+  useEffect(() => {
+    if (userId && organization) {
+      registerAndSavePushToken();
+    }
   }, [userId, organization]);
+
+  // Encuestas: carga cuando el evento activo está disponible
+  useEffect(() => {
+    if (activeEventId) fetchSurveys();
+  }, [activeEventId]);
 
   useEffect(() => {
     if (userId && organization) {
@@ -235,16 +241,8 @@ export default function ProtectedLayout() {
         });
 
       return () => {
-        if (notificationListener.current) {
-          Notifications.removeNotificationSubscription(
-            notificationListener.current,
-          );
-        }
-        if (responseListener.current) {
-          Notifications.removeNotificationSubscription(
-            responseListener.current,
-          );
-        }
+        notificationListener.current?.remove();
+        responseListener.current?.remove();
       };
     }
   }, [userId, organization]);
@@ -277,16 +275,8 @@ export default function ProtectedLayout() {
     }
   };
 
-  if (!isAppReady || isLoading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator animating={true} size="large" />
-        <Text>Cargando...</Text>
-      </View>
-    );
-  }
-
-  if (!isLoggedIn) {
+  // Redirect only when auth has resolved AND user is not logged in
+  if (!isLoading && !isLoggedIn) {
     return <Redirect href="/login" />;
   }
 
@@ -333,6 +323,12 @@ export default function ProtectedLayout() {
         />
       )}
       <Stack screenOptions={{ headerShown: false }} />
+      {(!isAppReady || isLoading) && (
+        <View style={[styles.loadingOverlay]}>
+          <ActivityIndicator animating={true} size="large" />
+          <Text>Cargando...</Text>
+        </View>
+      )}
     </View>
   );
 }
@@ -373,6 +369,13 @@ const styles = StyleSheet.create({
   closeButtonText: {
     color: "#fff",
     fontSize: 16,
+  },
+  loadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#fff",
+    zIndex: 999,
   },
   loadingContainer: {
     flex: 1,

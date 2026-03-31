@@ -76,10 +76,10 @@ export const deleteSurvey = async (id: string): Promise<void> => {
   }
 };
 
-// Buscar encuestas con filtros
-export const searchSurveys = async (filters: any): Promise<any> => {
+// Obtener encuestas de un evento específico
+export const fetchSurveysByEvent = async (eventId: string, params?: any): Promise<any> => {
   try {
-    const response = await api.get("/surveys/search", { params: filters });
+    const response = await api.get(`/events/${eventId}/surveys`, { params });
     return response.data;
   } catch (error) {
     console.error("Error al buscar encuestas con filtros:", error);

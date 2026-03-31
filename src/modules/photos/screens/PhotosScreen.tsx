@@ -17,7 +17,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { storage, auth } from '@/services/firebaseConfig';
 import { useTranslation } from '@/src/i18n';
-import { colors, spacing, typography } from '@/src/theme';
+import { colors, spacing, typography, useBrandedColors } from '@/src/theme';
 import { useEvent } from '@/context/EventContext';
 import { useAuth } from '@/context/AuthContext';
 import { get, post, del } from '@/src/core';
@@ -45,6 +45,7 @@ export const PhotosScreen: React.FC = () => {
   const { t } = useTranslation();
   const { activeEventId } = useEvent();
   const { userId } = useAuth();
+  const bc = useBrandedColors();
 
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [loading, setLoading] = useState(true);
@@ -145,7 +146,7 @@ export const PhotosScreen: React.FC = () => {
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color={colors.primary} />
+        <ActivityIndicator size="large" color={bc.primary} />
       </View>
     );
   }
@@ -163,8 +164,8 @@ export const PhotosScreen: React.FC = () => {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={() => loadPhotos(true)}
-            colors={[colors.primary]}
-            tintColor={colors.primary}
+            colors={[bc.primary]}
+            tintColor={bc.primary}
           />
         }
         ListHeaderComponent={
@@ -196,7 +197,7 @@ export const PhotosScreen: React.FC = () => {
 
       {/* FAB Upload */}
       <TouchableOpacity
-        style={[styles.fab, uploading && styles.fabDisabled]}
+        style={[styles.fab, { backgroundColor: bc.primary }, uploading && styles.fabDisabled]}
         onPress={handleUpload}
         disabled={uploading}
         activeOpacity={0.8}

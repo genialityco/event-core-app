@@ -9,43 +9,61 @@
       "distribution": "internal",
       "channel": "development",
       "env": {
-        "CLIENT": "acho",
-        "EXPO_PUBLIC_CLIENT": "acho"
+        "CLIENT": "ails-events",
+        "EXPO_PUBLIC_CLIENT": "ails-events"
       }
     },
     "preview": {
       "distribution": "internal",
       "channel": "preview",
       "env": {
-        "CLIENT": "acho",
-        "EXPO_PUBLIC_CLIENT": "acho"
+        "CLIENT": "ails-events",
+        "EXPO_PUBLIC_CLIENT": "ails-events"
       }
     },
     "production": {
       "autoIncrement": true,
       "channel": "production",
       "env": {
+        "CLIENT": "ails-events",
+        "EXPO_PUBLIC_CLIENT": "ails-events"
+      }
+    },
+    "acho-development": {
+      "extends": "development",
+      "env": {
         "CLIENT": "acho",
         "EXPO_PUBLIC_CLIENT": "acho"
       }
     },
-    "ails-news-development": {
-      "extends": "development",
+    "acho-preview": {
+      "extends": "preview",
       "env": {
-        "CLIENT": "ails-news",
-        "EXPO_PUBLIC_CLIENT": "ails-news"
+        "CLIENT": "acho",
+        "EXPO_PUBLIC_CLIENT": "acho"
       }
     },
-    "ails-news-production": {
+    "acho-production": {
       "extends": "production",
       "env": {
-        "CLIENT": "ails-news",
-        "EXPO_PUBLIC_CLIENT": "ails-news"
+        "CLIENT": "acho",
+        "EXPO_PUBLIC_CLIENT": "acho"
       }
     }
   },
   "submit": {
     "production": {
+      "ios": {
+        "appleId": "TODO_AILS_APPLE_ID",
+        "ascAppId": "TODO_AILS_ASC_APP_ID",
+        "appleTeamId": "TODO_AILS_APPLE_TEAM_ID"
+      },
+      "android": {
+        "serviceAccountKeyPath": "TODO_PATH_TO_AILS_SERVICE_ACCOUNT.json",
+        "track": "production"
+      }
+    },
+    "acho-production": {
       "ios": {
         "appleId": "recertificacion@acho.com.co",
         "ascAppId": "6736631927",

@@ -13,7 +13,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { useTranslation } from '@/src/i18n';
-import { colors, spacing, typography } from '@/src/theme';
+import { colors, spacing, typography, useBrandedColors } from '@/src/theme';
 import { useEvent } from '@/context/EventContext';
 import { get } from '@/src/core';
 
@@ -26,6 +26,15 @@ interface Speaker {
   location?: string;
   isInternational?: boolean;
   imageUrl?: string;
+}
+
+interface SpeakerSession {
+  _id: string;
+  title: string;
+  startDateTime?: string;
+  endDateTime?: string;
+  room?: string;
+  typeSession?: string;
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -74,14 +83,23 @@ const SpeakerCard: React.FC<{ speaker: Speaker; onPress: () => void }> = ({
 
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 
+const formatTime = (d: string) =>
+  new Date(d).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+const formatDateShort = (d: string) =>
+  new Date(d).toLocaleDateString('es-CO', { weekday: 'short', day: 'numeric', month: 'short' });
+
 export const SpeakersScreen: React.FC = () => {
   const { t } = useTranslation();
   const { activeEventId } = useEvent();
+  const bc = useBrandedColors();
 
   const [speakers, setSpeakers] = useState<Speaker[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [selected, setSelected] = useState<Speaker | null>(null);
+  const [speakerSessions, setSpeakerSessions] = useState<SpeakerSession[]>([]);
+  const [sessionsLoading, setSessionsLoading] = useState(false);
 
   const loadSpeakers = useCallback(async (isRefresh = false) => {
     if (!activeEventId) { setLoading(false); return; }
@@ -100,10 +118,45 @@ export const SpeakersScreen: React.FC = () => {
 
   useEffect(() => { loadSpeakers(); }, [loadSpeakers]);
 
+  const loadSpeakerSessions = useCallback(async (speakerId: string) => {
+    if (!activeEventId) return;
+    setSessionsLoading(true);
+    setSpeakerSessions([]);
+    try {
+      const res = await get<any>(`/events/${activeEventId}/agendas`);
+      const agendas: any[] = Array.isArray(res) ? res : res?.items ?? res?.data?.items ?? [];
+      const sessions: SpeakerSession[] = [];
+      for (const agenda of agendas) {
+        if (!agenda.isPublished) continue;
+        for (const session of agenda.sessions ?? []) {
+          const hasSpeaker = (session.speakers ?? []).some(
+            (sp: any) => (typeof sp === 'object' ? sp._id : sp) === speakerId,
+          );
+          if (hasSpeaker) sessions.push(session);
+        }
+      }
+      sessions.sort((a, b) => {
+        if (!a.startDateTime) return 1;
+        if (!b.startDateTime) return -1;
+        return new Date(a.startDateTime).getTime() - new Date(b.startDateTime).getTime();
+      });
+      setSpeakerSessions(sessions);
+    } catch {
+      // silent
+    } finally {
+      setSessionsLoading(false);
+    }
+  }, [activeEventId]);
+
+  const handleSelectSpeaker = (speaker: Speaker) => {
+    setSelected(speaker);
+    loadSpeakerSessions(speaker._id);
+  };
+
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color={colors.primary} />
+        <ActivityIndicator size="large" color={bc.primary} />
       </View>
     );
   }
@@ -131,8 +184,8 @@ export const SpeakersScreen: React.FC = () => {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={() => loadSpeakers(true)}
-            colors={[colors.primary]}
-            tintColor={colors.primary}
+            colors={[bc.primary]}
+            tintColor={bc.primary}
           />
         }
         ListHeaderComponent={
@@ -144,7 +197,7 @@ export const SpeakersScreen: React.FC = () => {
           </View>
         }
         renderItem={({ item }) => (
-          <SpeakerCard speaker={item} onPress={() => setSelected(item)} />
+          <SpeakerCard speaker={item} onPress={() => handleSelectSpeaker(item)} />
         )}
       />
 
@@ -197,6 +250,40 @@ export const SpeakersScreen: React.FC = () => {
                 {!!selected.description && (
                   <Text style={styles.modalDescription}>{selected.description}</Text>
                 )}
+
+                {/* Sessions */}
+                <View style={styles.sessionsSection}>
+                  <Text style={styles.sessionsSectionTitle}>🎤 {t('speaker.sessions')}</Text>
+                  {sessionsLoading ? (
+                    <ActivityIndicator size="small" color={bc.primary} style={{ marginTop: 12 }} />
+                  ) : speakerSessions.length === 0 ? (
+                    <Text style={styles.sessionsEmpty}>{t('speaker.noSessions')}</Text>
+                  ) : (
+                    speakerSessions.map((session) => (
+                      <View key={session._id} style={styles.sessionItem}>
+                        <Text style={styles.sessionItemTitle}>{session.title}</Text>
+                        {(session.startDateTime || session.endDateTime) && (
+                          <Text style={styles.sessionItemMeta}>
+                            🕐{' '}
+                            {session.startDateTime ? formatDateShort(session.startDateTime) : ''}
+                            {session.startDateTime ? '  ' : ''}
+                            {session.startDateTime ? formatTime(session.startDateTime) : ''}
+                            {session.startDateTime && session.endDateTime ? ' – ' : ''}
+                            {session.endDateTime ? formatTime(session.endDateTime) : ''}
+                          </Text>
+                        )}
+                        {!!session.room && (
+                          <Text style={styles.sessionItemMeta}>📍 {session.room}</Text>
+                        )}
+                        {!!session.typeSession && (
+                          <View style={styles.sessionTypeBadge}>
+                            <Text style={styles.sessionTypeBadgeText}>{session.typeSession}</Text>
+                          </View>
+                        )}
+                      </View>
+                    ))
+                  )}
+                </View>
               </View>
             </ScrollView>
           </View>
@@ -334,5 +421,58 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
     lineHeight: 24,
     textAlign: 'center',
+  },
+
+  sessionsSection: {
+    width: '100%',
+    marginTop: spacing.lg,
+    paddingTop: spacing.md,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border,
+  },
+  sessionsSectionTitle: {
+    ...typography.body1,
+    fontWeight: '700',
+    color: colors.text.primary,
+    marginBottom: spacing.sm,
+  },
+  sessionsEmpty: {
+    ...typography.body2,
+    color: colors.text.secondary,
+    marginTop: spacing.xs,
+  },
+  sessionItem: {
+    backgroundColor: colors.surface,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.sm,
+    marginBottom: spacing.xs,
+  },
+  sessionItemTitle: {
+    ...typography.body2,
+    fontWeight: '600',
+    color: colors.text.primary,
+    marginBottom: 4,
+  },
+  sessionItemMeta: {
+    ...typography.caption,
+    color: colors.text.secondary,
+    marginTop: 2,
+  },
+  sessionTypeBadge: {
+    alignSelf: 'flex-start',
+    backgroundColor: colors.primary + '18',
+    borderRadius: 20,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    marginTop: 6,
+    borderWidth: 1,
+    borderColor: colors.primary + '40',
+  },
+  sessionTypeBadgeText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: colors.primary,
   },
 });

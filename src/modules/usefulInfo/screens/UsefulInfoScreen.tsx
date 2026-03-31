@@ -12,7 +12,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { useTranslation } from '@/src/i18n';
-import { colors, spacing, typography } from '@/src/theme';
+import { colors, spacing, typography, useBrandedColors } from '@/src/theme';
 import { useEvent } from '@/context/EventContext';
 import { get } from '@/src/core';
 
@@ -103,6 +103,7 @@ const getIcon = (item: InfoItem) =>
 export const UsefulInfoScreen: React.FC = () => {
   const { t } = useTranslation();
   const { activeEventId } = useEvent();
+  const bc = useBrandedColors();
 
   const [items, setItems] = useState<InfoItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -130,7 +131,7 @@ export const UsefulInfoScreen: React.FC = () => {
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color={colors.primary} />
+        <ActivityIndicator size="large" color={bc.primary} />
       </View>
     );
   }
@@ -154,8 +155,8 @@ export const UsefulInfoScreen: React.FC = () => {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={() => loadItems(true)}
-            colors={[colors.primary]}
-            tintColor={colors.primary}
+            colors={[bc.primary]}
+            tintColor={bc.primary}
           />
         }
       >
@@ -368,7 +369,7 @@ const md = StyleSheet.create({
   },
   bullet: {
     fontSize: 14,
-    color: colors.primary,
+    color: colors.primary, // fallback; override with inline style if needed
     marginRight: 8,
     marginTop: 4,
     flexShrink: 0,
