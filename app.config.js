@@ -25,7 +25,7 @@ const clients = {
     android: {
       package: 'com.geniality.ailsevents',
       googleServicesFile: './google-services-ails.json',
-      icon: './assets/icons/icon-android.png',
+      icon: './assets/icons/LOGO_1024X1024_TIENDAS.png',
       splash: './assets/icons/APP-CUMBRE_SPLASH.png',
     },
     eas: {
@@ -122,7 +122,7 @@ module.exports = {
         'expo-build-properties',
         {
           android: {
-            usesCleartextTraffic: true,
+            // usesCleartextTraffic: true,
             compileSdkVersion: 35,
             targetSdkVersion: 35,
             buildToolsVersion: '35.0.0',
