@@ -15,11 +15,13 @@ import { useAuth } from "@/context/AuthContext";
 import { router } from "expo-router";
 import { clientConfig } from "@/clients";
 import Icon from "react-native-vector-icons/MaterialIcons";
+import { useBrandedColors } from "@/src/theme";
 
 const isOtp = clientConfig.authMethods.includes("otp");
 
 export default function LoginScreen() {
   const { signIn, signInDirect, resetPassword } = useAuth();
+  const bc = useBrandedColors();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
@@ -143,6 +145,7 @@ export default function LoginScreen() {
             onPress={isOtp ? handleDirectLogin : handlePasswordLogin}
             loading={isLoading}
             disabled={isLoading}
+            buttonColor={bc.primary}
             style={styles.loginButton}
             contentStyle={styles.buttonContent}
           >
@@ -150,7 +153,7 @@ export default function LoginScreen() {
           </Button>
 
           <TouchableOpacity onPress={() => router.push("/register")}>
-            <Text style={styles.linkText}>
+            <Text style={[styles.linkText, { color: bc.primary }]}>
               ¿No tienes una cuenta? Regístrate
             </Text>
           </TouchableOpacity>
@@ -158,7 +161,7 @@ export default function LoginScreen() {
           {/* Recuperar contraseña solo para flujo emailPassword */}
           {!isOtp && (
             <TouchableOpacity onPress={() => setIsModalVisible(true)}>
-              <Text style={styles.forgotPasswordText}>Olvidé mi contraseña</Text>
+              <Text style={[styles.forgotPasswordText, { color: bc.primary }]}>Olvidé mi contraseña</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -188,6 +191,7 @@ export default function LoginScreen() {
                 <Button
                   mode="contained"
                   onPress={handleForgotPassword}
+                  buttonColor={bc.primary}
                   style={styles.resetButton}
                 >
                   Enviar Enlace

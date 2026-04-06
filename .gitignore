@@ -24,6 +24,7 @@ GoogleService-Info-*.plist
 *firebase-adminsdk*.json
 *-firebase-*.json
 serviceAccountKey.json
+ail-event-1769ce73cea1.json
 
 # Per-client configs (contain API keys and Firebase credentials)
 clients/

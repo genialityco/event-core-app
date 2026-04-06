@@ -23,6 +23,7 @@ import {
 import { useOrganization } from "@/context/OrganizationContext";
 import { clientConfig } from "@/clients";
 import Icon from "react-native-vector-icons/MaterialIcons";
+import { useBrandedColors } from "@/src/theme";
 
 const isOtp = clientConfig.authMethods.includes("otp");
 
@@ -30,6 +31,7 @@ const isOtp = clientConfig.authMethods.includes("otp");
 
 function OtpRegisterForm() {
   const { signUpOtp } = useAuth();
+  const bc = useBrandedColors();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [isRegistering, setIsRegistering] = useState(false);
@@ -109,6 +111,7 @@ function OtpRegisterForm() {
             onPress={handleRegister}
             loading={isRegistering}
             disabled={isRegistering}
+            buttonColor={bc.primary}
             style={styles.registerButton}
             contentStyle={styles.buttonContent}
           >
@@ -116,7 +119,7 @@ function OtpRegisterForm() {
           </Button>
 
           <TouchableOpacity onPress={() => router.push("/login")}>
-            <Text style={styles.linkText}>
+            <Text style={[styles.linkText, { color: bc.primary }]}>
               Ya tengo una cuenta. Iniciar Sesión
             </Text>
           </TouchableOpacity>
@@ -129,6 +132,7 @@ function OtpRegisterForm() {
 // ─── Formulario dinámico para clientes email+contraseña ──────────────────────
 
 function DynamicRegisterForm() {
+  const bc = useBrandedColors();
   const [formData, setFormData] = useState<{ [key: string]: string }>({});
   const [fieldErrors, setFieldErrors] = useState<{ [key: string]: boolean }>({});
   const [organizationData, setOrganizationData] = useState<InterfaceOrganization>();
@@ -227,7 +231,7 @@ function DynamicRegisterForm() {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator animating size="large" />
+        <ActivityIndicator animating size="large" color={bc.primary} />
         <Text>Cargando formulario de registro...</Text>
       </View>
     );
@@ -410,13 +414,14 @@ function DynamicRegisterForm() {
               onPress={handleRegister}
               loading={isRegistering}
               disabled={isRegistering}
+              buttonColor={bc.primary}
               style={styles.registerButton}
             >
               Registrarme
             </Button>
 
             <TouchableOpacity onPress={() => router.push("/login")}>
-              <Text style={styles.linkText}>Ya tengo una cuenta. Iniciar Sesión</Text>
+              <Text style={[styles.linkText, { color: bc.primary }]}>Ya tengo una cuenta. Iniciar Sesión</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>

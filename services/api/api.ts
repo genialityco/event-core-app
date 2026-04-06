@@ -24,7 +24,8 @@ const api = axios.create({
 // Interceptor de solicitudes — inyecta token Firebase, x-bundle-id y x-organization-id
 api.interceptors.request.use(
   async (config) => {
-    // 1. Firebase Auth token
+    // 1. Firebase Auth token — espera a que Firebase restaure la sesión antes de continuar
+    await auth.authStateReady();
     const user = auth.currentUser;
     if (user) {
       try {
