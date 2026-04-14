@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  TouchableOpacity,
   Alert,
   Modal,
   KeyboardAvoidingView,
@@ -16,12 +15,14 @@ import { router } from "expo-router";
 import { clientConfig } from "@/clients";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import { useBrandedColors } from "@/src/theme";
+import { useTranslation } from "react-i18next";
 
 const isOtp = clientConfig.authMethods.includes("otp");
 
 export default function LoginScreen() {
   const { signIn, signInDirect, resetPassword } = useAuth();
   const bc = useBrandedColors();
+  const { t } = useTranslation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
@@ -35,11 +36,11 @@ export default function LoginScreen() {
   // ── Flujo directo: solo correo → custom token → ingreso ──
   const handleDirectLogin = async () => {
     if (!email) {
-      Alert.alert("Error", "Por favor ingresa tu correo electrónico.");
+      Alert.alert("Error", t("auth.login.emailPlaceholder"));
       return;
     }
     if (!validateEmail(email)) {
-      Alert.alert("Error", "Ingresa un correo electrónico válido.");
+      Alert.alert("Error", t("auth.login.emailPlaceholder"));
       return;
     }
 
@@ -55,11 +56,11 @@ export default function LoginScreen() {
   // ── Flujo email+contraseña (clientes legacy) ──
   const handlePasswordLogin = async () => {
     if (!email || !password) {
-      Alert.alert("Error", "Por favor, completa todos los campos.");
+      Alert.alert("Error", t("auth.login.error"));
       return;
     }
     if (!validateEmail(email)) {
-      Alert.alert("Error", "Ingresa un correo electrónico válido.");
+      Alert.alert("Error", t("auth.login.error"));
       return;
     }
 
@@ -74,7 +75,7 @@ export default function LoginScreen() {
 
   const handleForgotPassword = async () => {
     if (!resetEmail) {
-      Alert.alert("Error", "Por favor, ingresa tu correo electrónico.");
+      Alert.alert("Error", t("auth.login.emailPlaceholder"));
       return;
     }
     try {
@@ -98,15 +99,17 @@ export default function LoginScreen() {
         <View style={styles.overlay} />
 
         <View style={styles.card}>
-          <Text style={styles.headerText}>Bienvenido a {clientConfig.name}</Text>
+          <Text style={styles.headerText}>
+            {t("auth.login.title")} — {clientConfig.name}
+          </Text>
           <Text style={styles.descriptionText}>
             {isOtp
-              ? "Ingresa tu correo y te enviaremos un código de acceso"
-              : "Si ya te has registrado, por favor continúa iniciando sesión"}
+              ? t("auth.login.subtitleOtp")
+              : t("auth.login.subtitlePassword")}
           </Text>
 
           <PaperInput
-            label="Correo electrónico"
+            label={t("auth.login.emailPlaceholder")}
             mode="outlined"
             value={email}
             onChangeText={setEmail}
@@ -119,7 +122,7 @@ export default function LoginScreen() {
           {/* Campo contraseña solo para flujo emailPassword */}
           {!isOtp && (
             <PaperInput
-              label="Contraseña"
+              label={t("auth.login.passwordPlaceholder")}
               mode="outlined"
               value={password}
               onChangeText={setPassword}
@@ -140,29 +143,41 @@ export default function LoginScreen() {
             />
           )}
 
+          {/* Botón principal: Ingresar */}
           <Button
             mode="contained"
             onPress={isOtp ? handleDirectLogin : handlePasswordLogin}
             loading={isLoading}
             disabled={isLoading}
             buttonColor={bc.primary}
-            style={styles.loginButton}
+            style={styles.actionButton}
             contentStyle={styles.buttonContent}
           >
-            {isOtp ? "Ingresar" : "Iniciar Sesión"}
+            {t("auth.login.loginButton")}
           </Button>
 
-          <TouchableOpacity onPress={() => router.push("/register")}>
-            <Text style={[styles.linkText, { color: bc.primary }]}>
-              ¿No tienes una cuenta? Regístrate
-            </Text>
-          </TouchableOpacity>
+          {/* Botón secundario: Registrarse */}
+          <Button
+            mode="outlined"
+            onPress={() => router.push("/register")}
+            disabled={isLoading}
+            textColor={bc.primary}
+            style={[styles.actionButton, { borderColor: bc.primary }]}
+            contentStyle={styles.buttonContent}
+          >
+            {t("auth.login.registerButton")}
+          </Button>
 
           {/* Recuperar contraseña solo para flujo emailPassword */}
           {!isOtp && (
-            <TouchableOpacity onPress={() => setIsModalVisible(true)}>
-              <Text style={[styles.forgotPasswordText, { color: bc.primary }]}>Olvidé mi contraseña</Text>
-            </TouchableOpacity>
+            <Button
+              mode="text"
+              onPress={() => setIsModalVisible(true)}
+              textColor={bc.primary}
+              style={styles.forgotButton}
+            >
+              {t("auth.login.forgotPassword")}
+            </Button>
           )}
         </View>
 
@@ -175,10 +190,12 @@ export default function LoginScreen() {
           >
             <View style={styles.modalOverlay}>
               <View style={styles.modalContent}>
-                <Text style={styles.modalTitle}>Recuperar Contraseña</Text>
+                <Text style={styles.modalTitle}>
+                  {t("auth.login.resetTitle")}
+                </Text>
 
                 <PaperInput
-                  label="Correo electrónico"
+                  label={t("auth.login.emailPlaceholder")}
                   mode="outlined"
                   value={resetEmail}
                   onChangeText={setResetEmail}
@@ -192,17 +209,17 @@ export default function LoginScreen() {
                   mode="contained"
                   onPress={handleForgotPassword}
                   buttonColor={bc.primary}
-                  style={styles.resetButton}
+                  style={styles.modalButton}
                 >
-                  Enviar Enlace
+                  {t("auth.login.resetSend")}
                 </Button>
 
                 <Button
                   mode="text"
                   onPress={() => setIsModalVisible(false)}
-                  style={styles.cancelButton}
+                  style={styles.modalButton}
                 >
-                  Cancelar
+                  {t("auth.login.cancel")}
                 </Button>
               </View>
             </View>
@@ -237,14 +254,14 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   headerText: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: "bold",
     color: "#333",
     textAlign: "center",
-    marginBottom: 10,
+    marginBottom: 8,
   },
   descriptionText: {
-    fontSize: 16,
+    fontSize: 15,
     color: "#666",
     textAlign: "center",
     marginBottom: 20,
@@ -252,24 +269,14 @@ const styles = StyleSheet.create({
   input: {
     marginBottom: 15,
   },
-  loginButton: {
-    marginVertical: 10,
+  actionButton: {
+    marginTop: 10,
   },
   buttonContent: {
     height: 50,
   },
-  linkText: {
-    color: "#007AFF",
-    textAlign: "center",
-    fontWeight: "bold",
-    fontSize: 16,
-    marginTop: 10,
-  },
-  forgotPasswordText: {
-    color: "#007AFF",
-    textAlign: "center",
-    fontSize: 15,
-    marginTop: 15,
+  forgotButton: {
+    marginTop: 8,
   },
   modalOverlay: {
     flex: 1,
@@ -289,11 +296,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     marginBottom: 20,
   },
-  resetButton: {
-    marginTop: 10,
-    width: "100%",
-  },
-  cancelButton: {
+  modalButton: {
     marginTop: 10,
     width: "100%",
   },

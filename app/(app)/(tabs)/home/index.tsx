@@ -77,7 +77,7 @@ function HomeScreen() {
   };
 
   useEffect(() => {
-    if (userId && organization) {
+    if (userId && organization?._id) {
       fetchNews(1, true);
       refreshNotifications();
     }

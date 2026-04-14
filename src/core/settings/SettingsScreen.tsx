@@ -15,8 +15,9 @@ import { useAuth } from '@/context/AuthContext';
 export const SettingsScreen: React.FC = () => {
   const { t } = useTranslation();
   const currentLang = i18n.language as SupportedLanguage;
-  const { signOut } = useAuth();
+  const { signOut, deleteAccount } = useAuth();
   const [signingOut, setSigningOut] = useState(false);
+  const [deletingAccount, setDeletingAccount] = useState(false);
 
   const handleSignOut = () => {
     Alert.alert(
@@ -31,6 +32,25 @@ export const SettingsScreen: React.FC = () => {
             setSigningOut(true);
             await signOut();
             setSigningOut(false);
+          },
+        },
+      ],
+    );
+  };
+
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      t('settings.deleteAccountTitle'),
+      t('settings.deleteAccountMessage'),
+      [
+        { text: t('settings.signOutCancel'), style: 'cancel' },
+        {
+          text: t('settings.deleteAccountConfirm'),
+          style: 'destructive',
+          onPress: async () => {
+            setDeletingAccount(true);
+            await deleteAccount();
+            setDeletingAccount(false);
           },
         },
       ],
@@ -76,6 +96,16 @@ export const SettingsScreen: React.FC = () => {
           >
             <Text style={styles.signOutText}>
               {signingOut ? t('settings.signingOut') : t('settings.signOut')}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.option, { borderBottomWidth: 0 }]}
+            onPress={handleDeleteAccount}
+            disabled={deletingAccount}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.deleteAccountText}>
+              {deletingAccount ? t('settings.deletingAccount') : t('settings.deleteAccount')}
             </Text>
           </TouchableOpacity>
         </View>
@@ -144,6 +174,11 @@ const styles = StyleSheet.create({
   signOutText: {
     ...typography.body1,
     color: '#ef4444',
+    fontWeight: '500',
+  },
+  deleteAccountText: {
+    ...typography.body1,
+    color: '#b91c1c',
     fontWeight: '500',
   },
 });

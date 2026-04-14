@@ -120,23 +120,46 @@ const en = {
     permissionDenied: 'Permission required to access gallery',
   },
 
+  // Pantalla de bienvenida (antes de auth)
+  welcome: {
+    title: 'Welcome',
+    subtitle: 'Access the event experience',
+    signIn: 'Sign in',
+    signInSub: 'Already have an account',
+    signUp: 'Sign up',
+    signUpSub: 'New here? Create your account',
+  },
+
   // Autenticación
   auth: {
     login: {
       title: 'Welcome',
-      subtitle: 'Sign in with your email address',
+      subtitleOtp: "Enter your email and we'll send you an access code",
+      subtitlePassword: 'Already registered? Sign in to continue',
       emailPlaceholder: 'Email address',
       passwordPlaceholder: 'Password',
       loginButton: 'Sign in',
-      registerLink: "Don't have an account? Sign up",
+      registerButton: 'Sign up',
+      forgotPassword: 'Forgot password?',
+      resetTitle: 'Reset Password',
+      resetSend: 'Send link',
+      cancel: 'Cancel',
       error: 'Incorrect email or password',
     },
     register: {
       title: 'Create account',
+      subtitle: 'Enter your details to register',
+      subtitleOtp: 'Enter your name and email to register for {{appName}}',
       namePlaceholder: 'Full name',
       emailPlaceholder: 'Email address',
       registerButton: 'Sign up',
       loginLink: 'Already have an account? Sign in',
+      loading: 'Loading registration form...',
+      required: 'Required',
+      errorName: 'Please enter your name.',
+      errorEmail: 'Please enter a valid email address.',
+      errorOrgTitle: 'Configuration error',
+      errorOrg: 'Organization not configured. Contact the administrator.',
       error: 'Error creating account',
     },
     otp: {
@@ -161,6 +184,11 @@ const en = {
     signOutMessage: 'Are you sure you want to sign out?',
     signOutConfirm: 'Sign out',
     signOutCancel: 'Cancel',
+    deleteAccount: 'Delete account',
+    deletingAccount: 'Deleting account...',
+    deleteAccountTitle: 'Delete account',
+    deleteAccountMessage: 'This action is permanent. All your data will be deleted and you will not be able to recover your account. Do you want to continue?',
+    deleteAccountConfirm: 'Delete account',
   },
 } as const;
 

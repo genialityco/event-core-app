@@ -40,10 +40,12 @@ export default function ProtectedLayout() {
   const [currentNotification, setCurrentNotification] = useState<any | null>(
     null,
   );
-  const { organization } = useOrganization();
+  const { organization, isLoading: isTenantLoading } = useOrganization();
   const { activeEventId } = useEvent();
   const notificationListener = useRef<Notifications.Subscription | null>(null);
   const responseListener = useRef<Notifications.Subscription | null>(null);
+  const pushTokenRegistered = useRef(false);
+  const versionChecked = useRef(false);
   const { addNotification, markAsRead } = useNotifications();
   const [isAppReady, setIsAppReady] = useState(false);
   const router = useRouter();
@@ -155,7 +157,9 @@ export default function ProtectedLayout() {
         storeUrl = data.results[0]?.trackViewUrl;
       } else if (Device.osName === "Android") {
         storeUrl = `https://play.google.com/store/apps/details?id=${Application.applicationId}`;
-        latestVersion = "1.0.8";
+        // Play Store doesn't have a public JSON API — skip version check on Android
+        // to avoid false "update required" alerts. OTA updates handle this instead.
+        return;
       }
 
       // Obtenemos la versión actual desde OTA o la versión nativa
@@ -187,11 +191,12 @@ export default function ProtectedLayout() {
   };
 
   useEffect(() => {
+    if (versionChecked.current) return;
+    versionChecked.current = true;
     const verifyAppVersion = async () => {
       await checkForUpdates();
       await checkStoreVersion();
     };
-
     verifyAppVersion();
   }, []);
 
@@ -211,12 +216,14 @@ export default function ProtectedLayout() {
     initSplash();
   }, []);
 
-  // Carga de datos cuando el usuario y org están disponibles
+  // Registrar push token una sola vez cuando userId y organizationId están disponibles
+  // useRef guard garantiza ejecución única sin importar re-renders
   useEffect(() => {
-    if (userId && organization) {
+    if (userId && organization?._id && !pushTokenRegistered.current) {
+      pushTokenRegistered.current = true;
       registerAndSavePushToken();
     }
-  }, [userId, organization]);
+  }, [userId, organization?._id]);
 
   // Encuestas: carga cuando el evento activo está disponible
   useEffect(() => {
@@ -224,28 +231,26 @@ export default function ProtectedLayout() {
   }, [activeEventId]);
 
   useEffect(() => {
-    if (userId && organization) {
-      // Listener para notificaciones entrantes
-      notificationListener.current =
-        Notifications.addNotificationReceivedListener((notification) => {
-          console.log("Notificación recibida: ", notification);
-        });
+    if (!userId || !organization?._id) return;
 
-      // Listener para respuestas a notificaciones
-      responseListener.current =
-        Notifications.addNotificationResponseReceivedListener((response) => {
-          const { data } = response.notification.request.content;
-          if (data?.route) {
-            router.push(data.route);
-          }
-        });
+    notificationListener.current =
+      Notifications.addNotificationReceivedListener((notification) => {
+        console.log("Notificación recibida: ", notification);
+      });
 
-      return () => {
-        notificationListener.current?.remove();
-        responseListener.current?.remove();
-      };
-    }
-  }, [userId, organization]);
+    responseListener.current =
+      Notifications.addNotificationResponseReceivedListener((response) => {
+        const { data } = response.notification.request.content;
+        if (data?.route) {
+          router.push(data.route);
+        }
+      });
+
+    return () => {
+      notificationListener.current?.remove();
+      responseListener.current?.remove();
+    };
+  }, [userId, organization?._id]);
 
   useEffect(() => {
     const drawerStatusRef = ref(db, "drawer-status-acho");
@@ -275,11 +280,15 @@ export default function ProtectedLayout() {
     }
   };
 
-  // Redirect only when auth has resolved AND user is not logged in
-  if (!isLoading && !isLoggedIn) {
-    return <Redirect href="/login" />;
+  // Redirect only when both auth and tenant have resolved AND user is not logged in
+  if (!isLoading && !isTenantLoading && !isLoggedIn) {
+    return <Redirect href="/welcome" />;
   }
 
+  // Always render the same tree so Modal never unmounts due to loading-state toggles.
+  // React 19 throws if a class component calls setState in componentWillUnmount,
+  // and React Native's Modal does exactly that — so we must keep it mounted.
+  // A loading overlay is layered on top instead of using an early return.
   return (
     <View style={styles.mainContent}>
       {drawerVisible && (
@@ -314,6 +323,7 @@ export default function ProtectedLayout() {
           </View>
         </View>
       </Modal>
+
       {clientConfig.promoModal?.enabled && (
         <ImagePromoModal
           visible={showPromo}
@@ -322,11 +332,13 @@ export default function ProtectedLayout() {
           ctaUrl={clientConfig.promoModal.ctaUrl}
         />
       )}
+
       <Stack screenOptions={{ headerShown: false }} />
-      {(!isAppReady || isLoading) && (
-        <View style={[styles.loadingOverlay]}>
+
+      {/* Loading overlay: covers Stack screens while auth/tenant/splash resolve */}
+      {(isLoading || isTenantLoading || !isAppReady) && (
+        <View style={styles.loadingOverlay}>
           <ActivityIndicator animating={true} size="large" />
-          <Text>Cargando...</Text>
         </View>
       )}
     </View>

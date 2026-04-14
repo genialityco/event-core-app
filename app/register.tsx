@@ -24,47 +24,49 @@ import { useOrganization } from "@/context/OrganizationContext";
 import { clientConfig } from "@/clients";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import { useBrandedColors } from "@/src/theme";
+import { useTranslation } from "react-i18next";
 
 const isOtp = clientConfig.authMethods.includes("otp");
 
 // ─── Formulario simple para clientes OTP (nombre + correo) ───────────────────
 
 function OtpRegisterForm() {
-  const { signUpOtp } = useAuth();
+  const { signUpOtp, signInDirect } = useAuth();
   const bc = useBrandedColors();
+  const { t } = useTranslation();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [isRegistering, setIsRegistering] = useState(false);
 
   const handleRegister = async () => {
     if (!name.trim()) {
-      Alert.alert("Error", "Por favor ingresa tu nombre.");
+      Alert.alert("Error", t("auth.register.errorName"));
       return;
     }
     if (!email.trim() || !/\S+@\S+\.\S+/.test(email)) {
-      Alert.alert("Error", "Ingresa un correo electrónico válido.");
+      Alert.alert("Error", t("auth.register.errorEmail"));
       return;
     }
 
     const organizationId = clientConfig.organizationId;
     if (!organizationId) {
-      Alert.alert(
-        "Error de configuración",
-        "La organización no está configurada. Contacta al administrador."
-      );
+      Alert.alert(t("auth.register.errorOrgTitle"), t("auth.register.errorOrg"));
       return;
     }
 
     setIsRegistering(true);
-    const success = await signUpOtp(email.trim(), name.trim(), organizationId);
-    setIsRegistering(false);
+    const registered = await signUpOtp(email.trim(), name.trim(), organizationId);
 
-    if (success) {
-      Alert.alert(
-        "Registro exitoso",
-        "Tu cuenta fue creada. Ahora ingresa con tu correo para recibir el código de acceso.",
-        [{ text: "Ir a ingresar", onPress: () => router.push("/login") }]
-      );
+    if (registered) {
+      const loggedIn = await signInDirect(email.trim());
+      setIsRegistering(false);
+      if (loggedIn) {
+        router.replace("/(app)/(tabs)/home" as any);
+      } else {
+        router.replace("/login");
+      }
+    } else {
+      setIsRegistering(false);
     }
   };
 
@@ -80,13 +82,13 @@ function OtpRegisterForm() {
         behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
         <View style={styles.card}>
-          <Text style={styles.headerText}>Crear una cuenta</Text>
+          <Text style={styles.headerText}>{t("auth.register.title")}</Text>
           <Text style={styles.descriptionText}>
-            Ingresa tu nombre y correo para registrarte en {clientConfig.name}
+            {t("auth.register.subtitleOtp", { appName: clientConfig.name })}
           </Text>
 
           <TextInput
-            label="Nombre completo"
+            label={t("auth.register.namePlaceholder")}
             mode="outlined"
             value={name}
             onChangeText={setName}
@@ -96,7 +98,7 @@ function OtpRegisterForm() {
           />
 
           <TextInput
-            label="Correo electrónico"
+            label={t("auth.register.emailPlaceholder")}
             mode="outlined"
             value={email}
             onChangeText={setEmail}
@@ -115,12 +117,12 @@ function OtpRegisterForm() {
             style={styles.registerButton}
             contentStyle={styles.buttonContent}
           >
-            Registrarme
+            {t("auth.register.registerButton")}
           </Button>
 
           <TouchableOpacity onPress={() => router.push("/login")}>
             <Text style={[styles.linkText, { color: bc.primary }]}>
-              Ya tengo una cuenta. Iniciar Sesión
+              {t("auth.register.loginLink")}
             </Text>
           </TouchableOpacity>
         </View>
@@ -133,6 +135,7 @@ function OtpRegisterForm() {
 
 function DynamicRegisterForm() {
   const bc = useBrandedColors();
+  const { t } = useTranslation();
   const [formData, setFormData] = useState<{ [key: string]: string }>({});
   const [fieldErrors, setFieldErrors] = useState<{ [key: string]: boolean }>({});
   const [organizationData, setOrganizationData] = useState<InterfaceOrganization>();
@@ -216,9 +219,7 @@ function DynamicRegisterForm() {
       const success = await signUp(email, password, organization._id, setDataTreatmentConsent);
 
       if (success) {
-        Alert.alert("Registro Exitoso", "Usuario registrado correctamente.", [
-          { text: "OK", onPress: () => router.push("/(app)/(tabs)/home") },
-        ]);
+        router.replace("/(app)/(tabs)/home" as any);
       }
     } catch (error) {
       console.error("Error en registro:", error);
@@ -232,7 +233,7 @@ function DynamicRegisterForm() {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator animating size="large" color={bc.primary} />
-        <Text>Cargando formulario de registro...</Text>
+        <Text>{t("auth.register.loading")}</Text>
       </View>
     );
   }
@@ -251,7 +252,7 @@ function DynamicRegisterForm() {
       >
         <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: "center" }}>
           <View style={styles.card}>
-            <Text style={styles.headerText}>Crear una Cuenta</Text>
+            <Text style={styles.headerText}>{t("auth.register.title")}</Text>
 
             {organizationData?.propertiesDefinition
               .filter((field) => field.show)
@@ -286,7 +287,7 @@ function DynamicRegisterForm() {
                       </Text>
                       {fieldError && (
                         <Text style={{ color: "#ff3333", fontSize: 12, marginLeft: "auto" }}>
-                          Requerido
+                          {t("auth.register.required")}
                         </Text>
                       )}
                     </View>
@@ -310,7 +311,7 @@ function DynamicRegisterForm() {
                       </TouchableOpacity>
                       {fieldError && (
                         <Text style={{ color: "#ff3333", fontSize: 12, marginBottom: 10 }}>
-                          Este campo es obligatorio
+                          {t("auth.register.required")}
                         </Text>
                       )}
                       <Modal visible={showPicker} animationType="slide" transparent>
@@ -354,7 +355,7 @@ function DynamicRegisterForm() {
                       />
                       {fieldError && (
                         <Text style={{ color: "#ff3333", fontSize: 12, marginBottom: 10 }}>
-                          Este campo es obligatorio
+                          {t("auth.register.required")}
                         </Text>
                       )}
                     </View>
@@ -402,7 +403,7 @@ function DynamicRegisterForm() {
                     />
                     {fieldError && (
                       <Text style={{ color: "#ff3333", fontSize: 12, marginBottom: 10 }}>
-                        Este campo es obligatorio{isFieldRequired && "*"}
+                        {t("auth.register.required")}{isFieldRequired && "*"}
                       </Text>
                     )}
                   </View>
@@ -417,11 +418,11 @@ function DynamicRegisterForm() {
               buttonColor={bc.primary}
               style={styles.registerButton}
             >
-              Registrarme
+              {t("auth.register.registerButton")}
             </Button>
 
             <TouchableOpacity onPress={() => router.push("/login")}>
-              <Text style={[styles.linkText, { color: bc.primary }]}>Ya tengo una cuenta. Iniciar Sesión</Text>
+              <Text style={[styles.linkText, { color: bc.primary }]}>{t("auth.register.loginLink")}</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>

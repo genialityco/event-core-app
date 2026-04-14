@@ -70,10 +70,12 @@ export default function RenderEvents({
       <View style={styles.row}>
         {/* Columna para la imagen */}
         <View style={styles.contentColumnOne}>
-          <Image
-            source={{ uri: item.styles.miniatureImage }}
-            style={styles.eventImage}
-          />
+          {!!item.styles?.miniatureImage && (
+            <Image
+              source={{ uri: item.styles.miniatureImage }}
+              style={styles.eventImage}
+            />
+          )}
         </View>
 
         {/* Columna para el contenido */}

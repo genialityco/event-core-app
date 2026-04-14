@@ -9,8 +9,9 @@ import {
   Modal,
   RefreshControl,
   Image,
-  Dimensions,
+  useWindowDimensions,
 } from 'react-native';
+import WebView from 'react-native-webview';
 import { useTranslation } from '@/src/i18n';
 import { colors, spacing, typography, useBrandedColors } from '@/src/theme';
 import { useEvent } from '@/context/EventContext';
@@ -21,64 +22,14 @@ import { get } from '@/src/core';
 interface InfoItem {
   _id: string;
   title: string;
+  title_en?: string;
   category: string;
   icon: string;
   content: string;
+  content_en?: string;
   coverImageUrl?: string;
   order: number;
 }
-
-// ─── Simple Markdown Renderer ─────────────────────────────────────────────────
-
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-
-const MarkdownLine: React.FC<{ line: string }> = ({ line }) => {
-  if (line.startsWith('# ')) {
-    return <Text style={md.h1}>{line.slice(2)}</Text>;
-  }
-  if (line.startsWith('## ')) {
-    return <Text style={md.h2}>{line.slice(3)}</Text>;
-  }
-  if (line.startsWith('### ')) {
-    return <Text style={md.h3}>{line.slice(4)}</Text>;
-  }
-  if (line.startsWith('- ') || line.startsWith('• ')) {
-    return (
-      <View style={md.bulletRow}>
-        <Text style={md.bullet}>•</Text>
-        <Text style={md.bulletText}>{parseBold(line.slice(2))}</Text>
-      </View>
-    );
-  }
-  if (line.trim() === '' || line === '---') {
-    return <View style={md.spacer} />;
-  }
-  return <Text style={md.body}>{parseBold(line)}</Text>;
-};
-
-// Parse **bold** within a string → returns Text nodes
-const parseBold = (text: string): React.ReactNode => {
-  const parts = text.split(/\*\*(.*?)\*\*/g);
-  if (parts.length === 1) return text;
-  return parts.map((part, i) =>
-    i % 2 === 1 ? (
-      <Text key={i} style={md.bold}>{part}</Text>
-    ) : (
-      part
-    )
-  );
-};
-
-const MarkdownContent: React.FC<{ content: string }> = ({ content }) => {
-  const lines = content.split('\n');
-  return (
-    <View>
-      {lines.map((line, i) => (
-        <MarkdownLine key={i} line={line} />
-      ))}
-    </View>
-  );
-};
 
 // ─── Category Icons fallback ──────────────────────────────────────────────────
 
@@ -98,12 +49,96 @@ const CATEGORY_ICONS: Record<string, string> = {
 const getIcon = (item: InfoItem) =>
   item.icon || CATEGORY_ICONS[item.category] || '📌';
 
+// Strip HTML tags for card preview
+const stripHtml = (html: string) =>
+  html.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim().slice(0, 120);
+
+// ─── HTML Content Renderer ────────────────────────────────────────────────────
+
+const HtmlContent: React.FC<{ html: string }> = ({ html }) => {
+  const { width } = useWindowDimensions();
+  const [height, setHeight] = useState(100);
+
+  const styledHtml = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+          font-family: -apple-system, sans-serif;
+          font-size: 15px;
+          line-height: 1.6;
+          color: #1a1a1a;
+          background: transparent;
+          padding: 0;
+          overflow: hidden;
+        }
+        p { margin-bottom: 8px; }
+        h1 { font-size: 22px; font-weight: 700; margin: 16px 0 8px; }
+        h2 { font-size: 18px; font-weight: 700; margin: 12px 0 6px; }
+        h3 { font-size: 15px; font-weight: 700; margin: 10px 0 4px; }
+        ul, ol { padding-left: 20px; margin-bottom: 8px; }
+        li { margin-bottom: 4px; }
+        strong { font-weight: 700; }
+        em { font-style: italic; }
+        hr { border: none; border-top: 1px solid #e2e8f0; margin: 12px 0; }
+        img { max-width: 100%; border-radius: 8px; margin: 8px 0; display: block; }
+      </style>
+    </head>
+    <body>${html}</body>
+    </html>
+  `;
+
+  const measureScript = `
+    (function() {
+      function sendHeight() {
+        window.ReactNativeWebView.postMessage(String(document.body.scrollHeight));
+      }
+      // Measure after images finish loading
+      var images = document.getElementsByTagName('img');
+      var pending = images.length;
+      if (pending === 0) {
+        sendHeight();
+      } else {
+        function onLoad() { pending--; if (pending <= 0) sendHeight(); }
+        for (var i = 0; i < images.length; i++) {
+          if (images[i].complete) { onLoad(); }
+          else { images[i].addEventListener('load', onLoad); images[i].addEventListener('error', onLoad); }
+        }
+      }
+      // Also re-measure on window load as fallback
+      window.addEventListener('load', sendHeight);
+    })();
+    true;
+  `;
+
+  return (
+    <WebView
+      source={{ html: styledHtml }}
+      style={{ width: width - spacing.md * 2, height }}
+      scrollEnabled={false}
+      showsVerticalScrollIndicator={false}
+      originWhitelist={['*']}
+      onMessage={(e) => setHeight(Number(e.nativeEvent.data))}
+      injectedJavaScript={measureScript}
+    />
+  );
+};
+
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 
 export const UsefulInfoScreen: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { activeEventId } = useEvent();
   const bc = useBrandedColors();
+
+  const lang = i18n.language ?? 'es';
+  const localized = (base: string, translated?: string) => {
+    if (lang.startsWith('en') && translated?.trim()) return translated;
+    return base;
+  };
 
   const [items, setItems] = useState<InfoItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -184,10 +219,10 @@ export const UsefulInfoScreen: React.FC = () => {
             <View style={styles.cardBody}>
               <Text style={styles.cardIcon}>{getIcon(item)}</Text>
               <View style={styles.cardText}>
-                <Text style={styles.cardTitle}>{item.title}</Text>
+                <Text style={styles.cardTitle}>{localized(item.title, item.title_en)}</Text>
                 {item.content ? (
                   <Text style={styles.cardPreview} numberOfLines={2}>
-                    {item.content.replace(/[#*\-]/g, '').trim().slice(0, 120)}
+                    {stripHtml(localized(item.content, item.content_en))}
                   </Text>
                 ) : null}
               </View>
@@ -217,7 +252,7 @@ export const UsefulInfoScreen: React.FC = () => {
                 <Text style={styles.closeBtnText}>✕</Text>
               </TouchableOpacity>
               <Text style={styles.modalHeaderTitle} numberOfLines={1}>
-                {getIcon(selected)}  {selected.title}
+                {getIcon(selected)}  {localized(selected.title, selected.title_en)}
               </Text>
             </View>
 
@@ -234,7 +269,7 @@ export const UsefulInfoScreen: React.FC = () => {
                 />
               ) : null}
 
-              <MarkdownContent content={selected.content || ''} />
+              <HtmlContent html={localized(selected.content, selected.content_en)} />
 
               <View style={{ height: spacing.xxl }} />
             </ScrollView>
@@ -323,62 +358,4 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginBottom: spacing.lg,
   },
-});
-
-// ─── Markdown Styles ──────────────────────────────────────────────────────────
-
-const md = StyleSheet.create({
-  h1: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: colors.text.primary,
-    marginTop: spacing.lg,
-    marginBottom: spacing.sm,
-    lineHeight: 28,
-  },
-  h2: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: colors.text.primary,
-    marginTop: spacing.md,
-    marginBottom: 6,
-    lineHeight: 24,
-  },
-  h3: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: colors.text.primary,
-    marginTop: spacing.sm,
-    marginBottom: 4,
-  },
-  body: {
-    ...typography.body1,
-    color: colors.text.primary,
-    lineHeight: 24,
-    marginBottom: 4,
-  },
-  bold: {
-    fontWeight: '700',
-    color: colors.text.primary,
-  },
-  bulletRow: {
-    flexDirection: 'row',
-    marginBottom: 4,
-    paddingLeft: 4,
-    alignItems: 'flex-start',
-  },
-  bullet: {
-    fontSize: 14,
-    color: colors.primary, // fallback; override with inline style if needed
-    marginRight: 8,
-    marginTop: 4,
-    flexShrink: 0,
-  },
-  bulletText: {
-    ...typography.body1,
-    color: colors.text.primary,
-    lineHeight: 24,
-    flex: 1,
-  },
-  spacer: { height: 8 },
 });

@@ -10,6 +10,7 @@ import {
   sendPasswordResetEmail,
 } from "firebase/auth";
 import { loginDirect, sendOtpCode, verifyOtpCode, registerWithEmail } from "@/services/api/authService";
+import api from "@/services/api/api";
 import { ReactNode } from "react";
 import { createUser, searchUsers } from "@/services/api/userService";
 import { createMember } from "@/services/api/memberService";
@@ -300,21 +301,20 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   };
 
-  // Función para eliminar cuenta
+  // Función para eliminar cuenta (borra datos en backend + Firebase Auth)
   const deleteAccount = async () => {
     try {
       const user = auth.currentUser;
-      if (user) {
-        await firebaseDeleteUser(user);
-        await handleSignOut();
-        const refLogs = ref(db, "logs");
-        set(refLogs, {
-          message: `Ejecutando, deleteAccount: ${user.uid}`,
-          createdAt: new Date().toISOString(),
-        });
-      } else {
-        throw new Error("No hay un usuario autenticado para eliminar.");
-      }
+      if (!user) throw new Error("No hay un usuario autenticado para eliminar.");
+
+      // 1. Borrar todos los datos del usuario en el backend (MongoDB)
+      await api.delete('/users/me');
+
+      // 2. Borrar el usuario de Firebase Auth
+      await firebaseDeleteUser(user);
+
+      // 3. Limpiar estado local
+      await handleSignOut();
     } catch (error) {
       handleAuthError(error, "Error al eliminar la cuenta.");
     }

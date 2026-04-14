@@ -14,7 +14,12 @@ export const SUPPORTED_LANGUAGES = {
 
 export type SupportedLanguage = keyof typeof SUPPORTED_LANGUAGES;
 
-/** Detecta el idioma guardado o usa el del dispositivo (fallback: 'es') */
+/**
+ * Orden de prioridad:
+ * 1. Idioma guardado explícitamente por el usuario (AsyncStorage)
+ * 2. Idioma del dispositivo si está soportado
+ * 3. 'en' como fallback final
+ */
 const detectLanguage = async (): Promise<SupportedLanguage> => {
   try {
     const saved = await AsyncStorage.getItem(LANGUAGE_KEY);
@@ -23,10 +28,10 @@ const detectLanguage = async (): Promise<SupportedLanguage> => {
     }
   } catch {}
 
-  const deviceLang = getLocales()[0]?.languageCode ?? 'es';
+  const deviceLang = getLocales()[0]?.languageCode ?? 'en';
   return deviceLang in SUPPORTED_LANGUAGES
     ? (deviceLang as SupportedLanguage)
-    : 'es';
+    : 'en';
 };
 
 /** Cambia el idioma y lo persiste en AsyncStorage */
@@ -44,7 +49,7 @@ export const initI18n = async () => {
       en: { translation: en },
     },
     lng,
-    fallbackLng: 'es',
+    fallbackLng: 'en',
     interpolation: {
       escapeValue: false,
     },

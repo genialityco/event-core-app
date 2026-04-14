@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
 import { View, FlatList, StyleSheet, Alert } from "react-native";
 import { Card, Text, Button, ActivityIndicator } from "react-native-paper";
-import * as FileSystem from 'expo-file-system';  
+import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import {
   DocumentInterface,

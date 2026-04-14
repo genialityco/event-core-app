@@ -10,7 +10,7 @@ const ifExists = (filePath) =>
 
 const clients = {
   'ails-events': {
-    name: 'AILS Events',
+    name: 'AIL Events',
     slug: 'ails-events',
     scheme: 'ailsevents',
     version: '1.0.0',
@@ -21,6 +21,12 @@ const clients = {
       bundleIdentifier: 'com.geniality.ailsevents',
       googleServicesFile: './GoogleService-Info-ails.plist',
       splash: './assets/icons/APP-CUMBRE_SPLASH.png',
+      infoPlist: {
+        NSPhotoLibraryUsageDescription:
+          "This app allows users to upload photos related to the event.",
+        NSPhotoLibraryAddUsageDescription:
+          "This app allows users to save photos.",
+      },
     },
     android: {
       package: 'com.geniality.ailsevents',
@@ -86,6 +92,7 @@ module.exports = {
       infoPlist: {
         NSLocationWhenInUseUsageDescription:
           `${cfg.name} requiere acceso a la ubicación mientras se utiliza para personalizar la experiencia.`,
+        ...(cfg.ios.infoPlist ?? {}),
         UIBackgroundModes: ['fetch', 'remote-notification'],
         ITSAppUsesNonExemptEncryption: false,
       },

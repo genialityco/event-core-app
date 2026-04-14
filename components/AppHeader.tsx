@@ -43,14 +43,14 @@ const styles = StyleSheet.create({
     borderBottomWidth: 2,
   },
   content: {
-    height: 56,
+    height: 70,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 16,
   },
   logo: {
-    height: 34,
+    height: 42,
     flex: 1,
   },
   divider: {

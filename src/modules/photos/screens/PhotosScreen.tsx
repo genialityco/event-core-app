@@ -80,9 +80,11 @@ export const PhotosScreen: React.FC = () => {
     }
 
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: "images",
       quality: 0.7,
       allowsEditing: false,
+      // iPad requires FULL_SCREEN to avoid popover anchor crash
+      presentationStyle: ImagePicker.UIImagePickerPresentationStyle.FULL_SCREEN,
     });
 
     if (result.canceled || !result.assets?.length) return;

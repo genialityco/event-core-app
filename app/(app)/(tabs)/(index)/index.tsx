@@ -5,7 +5,6 @@ import { router } from "expo-router";
 import { useOrganization } from "@/context/TenantContext";
 import { useAuth } from "@/context/AuthContext";
 import { searchEvents } from "@/services/api/eventService";
-import { searchAttendees } from "@/services/api/attendeeService";
 import { searchMembers } from "@/services/api/memberService";
 import LinkifyText from "@/app/utils/LinkifyText";
 import dayjs from "dayjs";
@@ -28,7 +27,8 @@ interface Event {
 
 // --- Utilidades ---
 
-const cleanDescriptionUrls = (description: string): string => {
+const cleanDescriptionUrls = (description: string | null | undefined): string => {
+  if (!description) return "";
   return description
     .replace(/\[([^\]]+)\]\(https?:\/\/[^\)]+\)/g, "")
     .replace(/(?<!\]\()https?:\/\/[^\s\)]+/g, "")
@@ -64,6 +64,7 @@ export default function EventosScreen() {
 
   const fetchEventsAndAttendees = async (page = 1) => {
     if (loading) return;
+    if (!userId || !organization?._id) return; // esperar a que auth y tenant estén listos
     setLoading(true);
 
     try {
@@ -87,19 +88,10 @@ export default function EventosScreen() {
       setEvents((prev) => (page === 1 ? items : [...prev, ...items]));
       setTotalPages(eventResponse.data.totalPages ?? 1);
 
-      const attendeeResponse = await searchAttendees({ userId });
-      const attendeeItems = attendeeResponse.data?.items ?? [];
-
-      if (attendeeItems.length === 0) {
-        const memberData = await searchMembers({ userId, organizationId: organization._id });
-        setMemberId(memberData.data.items?.[0]?._id ?? null);
-        setIsMemberActive(!!memberData.data.items?.[0]?.memberActive);
-      } else {
-        attendeeItems.forEach((a: any) => {
-          setMemberId(a.memberId?._id ?? null);
-          if (a.memberId?.memberActive) setIsMemberActive(true);
-        });
-      }
+      // Obtener memberId directamente desde members (attendees usa ruta event-scoped)
+      const memberData = await searchMembers({ userId, organizationId: organization._id });
+      setMemberId(memberData.data.items?.[0]?._id ?? null);
+      setIsMemberActive(!!memberData.data.items?.[0]?.memberActive);
     } catch (e) {
       console.error("Error fetching events or attendees:", e);
     } finally {
@@ -110,7 +102,7 @@ export default function EventosScreen() {
   useFocusEffect(
     useCallback(() => {
       fetchEventsAndAttendees(currentPage);
-    }, [organization, userId, currentPage]),
+    }, [organization?._id, userId, currentPage]),
   );
 
   const navigateToEvent = (eventId: string) => {
@@ -155,7 +147,9 @@ export default function EventosScreen() {
           onPress={() => navigateToEvent(event._id)}
         >
           <View style={styles.row}>
-            <Image source={{ uri: event.styles.miniatureImage }} style={styles.eventImage} />
+            {!!event.styles?.miniatureImage && (
+              <Image source={{ uri: event.styles.miniatureImage }} style={styles.eventImage} />
+            )}
             <View style={styles.contentColumn}>
               <Text style={styles.eventDate}>
                 {formatDate(event.startDate, event.endDate)}

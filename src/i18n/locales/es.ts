@@ -120,23 +120,46 @@ const es = {
     permissionDenied: 'Se necesita permiso para acceder a la galería',
   },
 
+  // Pantalla de bienvenida (antes de auth)
+  welcome: {
+    title: 'Bienvenido',
+    subtitle: 'Accede a la experiencia del evento',
+    signIn: 'Ingresar',
+    signInSub: 'Ya tengo una cuenta',
+    signUp: 'Registrarse',
+    signUpSub: '¿Nuevo aquí? Crea tu cuenta',
+  },
+
   // Autenticación
   auth: {
     login: {
       title: 'Bienvenido',
-      subtitle: 'Ingresa con tu correo electrónico',
+      subtitleOtp: 'Ingresa tu correo y te enviaremos un código de acceso',
+      subtitlePassword: '¿Ya te registraste? Inicia sesión para continuar',
       emailPlaceholder: 'Correo electrónico',
       passwordPlaceholder: 'Contraseña',
       loginButton: 'Ingresar',
-      registerLink: '¿No tienes cuenta? Regístrate',
+      registerButton: 'Registrarse',
+      forgotPassword: '¿Olvidé mi contraseña?',
+      resetTitle: 'Recuperar contraseña',
+      resetSend: 'Enviar enlace',
+      cancel: 'Cancelar',
       error: 'Correo o contraseña incorrectos',
     },
     register: {
       title: 'Crear cuenta',
+      subtitle: 'Ingresa tus datos para registrarte',
+      subtitleOtp: 'Ingresa tu nombre y correo para registrarte en {{appName}}',
       namePlaceholder: 'Nombre completo',
       emailPlaceholder: 'Correo electrónico',
       registerButton: 'Registrarse',
       loginLink: '¿Ya tienes cuenta? Inicia sesión',
+      loading: 'Cargando formulario de registro...',
+      required: 'Requerido',
+      errorName: 'Por favor ingresa tu nombre.',
+      errorEmail: 'Ingresa un correo electrónico válido.',
+      errorOrgTitle: 'Error de configuración',
+      errorOrg: 'La organización no está configurada. Contacta al administrador.',
       error: 'Error al crear la cuenta',
     },
     otp: {
@@ -161,6 +184,11 @@ const es = {
     signOutMessage: '¿Estás seguro que deseas cerrar sesión?',
     signOutConfirm: 'Cerrar sesión',
     signOutCancel: 'Cancelar',
+    deleteAccount: 'Eliminar cuenta',
+    deletingAccount: 'Eliminando cuenta...',
+    deleteAccountTitle: 'Eliminar cuenta',
+    deleteAccountMessage: 'Esta acción es permanente. Se borrarán todos tus datos y no podrás recuperar tu cuenta. ¿Deseas continuar?',
+    deleteAccountConfirm: 'Eliminar cuenta',
   },
 } as const;
 

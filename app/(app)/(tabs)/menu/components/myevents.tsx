@@ -115,10 +115,12 @@ export default function MyEventsScreen() {
             >
               <View style={styles.row}>
                 <View style={styles.contentColumnOne}>
-                  <Image
-                    source={{ uri: event.styles.miniatureImage }}
-                    style={styles.eventImage}
-                  />
+                  {!!event.styles?.miniatureImage && (
+                    <Image
+                      source={{ uri: event.styles.miniatureImage }}
+                      style={styles.eventImage}
+                    />
+                  )}
                 </View>
 
                 <View style={styles.contentColumnTwo}>

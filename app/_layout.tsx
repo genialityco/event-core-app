@@ -29,7 +29,9 @@ export default function RootLayout() {
               <ThemeProvider value={DefaultTheme}>
                 <Stack screenOptions={{ headerShown: false }}>
                   <Stack.Screen name="(app)" />
+                  <Stack.Screen name="welcome" />
                   <Stack.Screen name="login" />
+                  <Stack.Screen name="register" />
                 </Stack>
               </ThemeProvider>
             </PaperProvider>

@@ -159,9 +159,10 @@ export const useTenant = () => useContext(TenantContext);
  * Migrate callers to useTenant() over time.
  */
 export const useOrganization = () => {
-  const { organization, organizationId, setOrganizationId } = useTenant();
+  const { organization, organizationId, isLoading, setOrganizationId } = useTenant();
   return {
     organization: organization ?? { _id: organizationId ?? "" },
+    isLoading,
     updateOrganization: (org: { _id: string }) => setOrganizationId(org._id),
   };
 };
