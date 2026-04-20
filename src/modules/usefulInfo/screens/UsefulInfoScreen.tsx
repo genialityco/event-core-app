@@ -1,21 +1,21 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import {
   View,
   Text,
   ScrollView,
   TouchableOpacity,
   StyleSheet,
-  ActivityIndicator,
-  Modal,
   RefreshControl,
   Image,
   useWindowDimensions,
+  Animated,
+  Easing,
 } from 'react-native';
-import WebView from 'react-native-webview';
 import { useTranslation } from '@/src/i18n';
 import { colors, spacing, typography, useBrandedColors } from '@/src/theme';
 import { useEvent } from '@/context/EventContext';
 import { get } from '@/src/core';
+import { InfoDetailModal } from './InfoDetailModal';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -31,99 +31,139 @@ interface InfoItem {
   order: number;
 }
 
-// ─── Category Icons fallback ──────────────────────────────────────────────────
+interface CategoryGroup {
+  category: string;
+  label: string;
+  color: string;
+  items: InfoItem[];
+}
 
-const CATEGORY_ICONS: Record<string, string> = {
-  passport: '🛂',
-  visa: '📋',
-  airlines: '✈️',
-  payment: '💳',
-  transport: '🚌',
-  accommodation: '🏨',
-  plugs: '🔌',
-  tourism: '🗺️',
-  security: '🔒',
-  general: '📌',
+// ─── Category Configuration ────────────────────────────────────────────────
+
+const CATEGORY_CONFIG: Record<
+  string,
+  { label: string; icon: string; color: string; bgColor: string }
+> = {
+  passport: {
+    label: 'Pasaporte',
+    icon: '🛂',
+    color: '#8B5CF6',
+    bgColor: 'rgba(139, 92, 246, 0.1)',
+  },
+  visa: {
+    label: 'Visa',
+    icon: '📋',
+    color: '#3B82F6',
+    bgColor: 'rgba(59, 130, 246, 0.1)',
+  },
+  airlines: {
+    label: 'Aerolíneas',
+    icon: '✈️',
+    color: '#06B6D4',
+    bgColor: 'rgba(6, 182, 212, 0.1)',
+  },
+  payment: {
+    label: 'Pago',
+    icon: '💳',
+    color: '#10B981',
+    bgColor: 'rgba(16, 185, 129, 0.1)',
+  },
+  transport: {
+    label: 'Transporte',
+    icon: '🚌',
+    color: '#F59E0B',
+    bgColor: 'rgba(245, 158, 11, 0.1)',
+  },
+  accommodation: {
+    label: 'Alojamiento',
+    icon: '🏨',
+    color: '#EC4899',
+    bgColor: 'rgba(236, 72, 153, 0.1)',
+  },
+  plugs: {
+    label: 'Enchufes',
+    icon: '🔌',
+    color: '#EF4444',
+    bgColor: 'rgba(239, 68, 68, 0.1)',
+  },
+  tourism: {
+    label: 'Turismo',
+    icon: '🗺️',
+    color: '#6366F1',
+    bgColor: 'rgba(99, 102, 241, 0.1)',
+  },
+  security: {
+    label: 'Seguridad',
+    icon: '🔒',
+    color: '#14B8A6',
+    bgColor: 'rgba(20, 184, 166, 0.1)',
+  },
+  general: {
+    label: 'General',
+    icon: '📌',
+    color: '#64748B',
+    bgColor: 'rgba(100, 116, 139, 0.1)',
+  },
 };
 
 const getIcon = (item: InfoItem) =>
-  item.icon || CATEGORY_ICONS[item.category] || '📌';
+  item.icon || CATEGORY_CONFIG[item.category]?.icon || '📌';
+
+const getCategoryConfig = (category: string) =>
+  CATEGORY_CONFIG[category] || CATEGORY_CONFIG.general;
 
 // Strip HTML tags for card preview
 const stripHtml = (html: string) =>
   html.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim().slice(0, 120);
 
-// ─── HTML Content Renderer ────────────────────────────────────────────────────
+// ─── Skeleton Loader ──────────────────────────────────────────────────────────
 
-const HtmlContent: React.FC<{ html: string }> = ({ html }) => {
-  const { width } = useWindowDimensions();
-  const [height, setHeight] = useState(100);
+const SkeletonCard: React.FC = () => {
+  const shimmer = new Animated.Value(0);
 
-  const styledHtml = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body {
-          font-family: -apple-system, sans-serif;
-          font-size: 15px;
-          line-height: 1.6;
-          color: #1a1a1a;
-          background: transparent;
-          padding: 0;
-          overflow: hidden;
-        }
-        p { margin-bottom: 8px; }
-        h1 { font-size: 22px; font-weight: 700; margin: 16px 0 8px; }
-        h2 { font-size: 18px; font-weight: 700; margin: 12px 0 6px; }
-        h3 { font-size: 15px; font-weight: 700; margin: 10px 0 4px; }
-        ul, ol { padding-left: 20px; margin-bottom: 8px; }
-        li { margin-bottom: 4px; }
-        strong { font-weight: 700; }
-        em { font-style: italic; }
-        hr { border: none; border-top: 1px solid #e2e8f0; margin: 12px 0; }
-        img { max-width: 100%; border-radius: 8px; margin: 8px 0; display: block; }
-      </style>
-    </head>
-    <body>${html}</body>
-    </html>
-  `;
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(shimmer, {
+          toValue: 1,
+          duration: 800,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(shimmer, {
+          toValue: 0,
+          duration: 800,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+  }, [shimmer]);
 
-  const measureScript = `
-    (function() {
-      function sendHeight() {
-        window.ReactNativeWebView.postMessage(String(document.body.scrollHeight));
-      }
-      // Measure after images finish loading
-      var images = document.getElementsByTagName('img');
-      var pending = images.length;
-      if (pending === 0) {
-        sendHeight();
-      } else {
-        function onLoad() { pending--; if (pending <= 0) sendHeight(); }
-        for (var i = 0; i < images.length; i++) {
-          if (images[i].complete) { onLoad(); }
-          else { images[i].addEventListener('load', onLoad); images[i].addEventListener('error', onLoad); }
-        }
-      }
-      // Also re-measure on window load as fallback
-      window.addEventListener('load', sendHeight);
-    })();
-    true;
-  `;
+  const opacity = shimmer.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.3, 0.6],
+  });
 
   return (
-    <WebView
-      source={{ html: styledHtml }}
-      style={{ width: width - spacing.md * 2, height }}
-      scrollEnabled={false}
-      showsVerticalScrollIndicator={false}
-      originWhitelist={['*']}
-      onMessage={(e) => setHeight(Number(e.nativeEvent.data))}
-      injectedJavaScript={measureScript}
-    />
+    <View style={styles.card}>
+      <Animated.View
+        style={[styles.skeletonCover, { opacity }]}
+      />
+      <View style={styles.cardBody}>
+        <Animated.View
+          style={[styles.skeletonIcon, { opacity }]}
+        />
+        <View style={styles.cardText}>
+          <Animated.View
+            style={[styles.skeletonTitle, { opacity }]}
+          />
+          <Animated.View
+            style={[styles.skeletonText, { opacity, marginTop: 8 }]}
+          />
+        </View>
+      </View>
+    </View>
   );
 };
 
@@ -133,6 +173,7 @@ export const UsefulInfoScreen: React.FC = () => {
   const { t, i18n } = useTranslation();
   const { activeEventId } = useEvent();
   const bc = useBrandedColors();
+  const { width } = useWindowDimensions();
 
   const lang = i18n.language ?? 'es';
   const localized = (base: string, translated?: string) => {
@@ -144,39 +185,106 @@ export const UsefulInfoScreen: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [selected, setSelected] = useState<InfoItem | null>(null);
+  const fadeAnim = useRef(new Animated.Value(0)).current;
 
   const loadItems = useCallback(async (isRefresh = false) => {
-    if (!activeEventId) { setLoading(false); return; }
-    if (isRefresh) setRefreshing(true); else setLoading(true);
+    if (!activeEventId) {
+      setLoading(false);
+      return;
+    }
+    if (isRefresh) setRefreshing(true);
+    else setLoading(true);
     try {
       const res = await get<any>(`/events/${activeEventId}/useful-info`);
-      const data: InfoItem[] = Array.isArray(res) ? res : res?.items ?? res?.data?.items ?? [];
+      const data: InfoItem[] = Array.isArray(res)
+        ? res
+        : res?.items ?? res?.data?.items ?? [];
       const sorted = [...data].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
       setItems(sorted);
+
+      // Animate in
+      fadeAnim.setValue(0);
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 400,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }).start();
     } catch {
       // silent
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [activeEventId]);
+  }, [activeEventId, fadeAnim]);
 
-  useEffect(() => { loadItems(); }, [loadItems]);
+  useEffect(() => {
+    loadItems();
+  }, [loadItems]);
+
+  // Group items by category
+  const groupedItems = useMemo(() => {
+    const groups: Record<string, InfoItem[]> = {};
+
+    items.forEach((item) => {
+      if (!groups[item.category]) {
+        groups[item.category] = [];
+      }
+      groups[item.category].push(item);
+    });
+
+    return Object.entries(groups)
+      .map(([category, categoryItems]) => ({
+        category,
+        label: getCategoryConfig(category).label,
+        color: getCategoryConfig(category).color,
+        items: categoryItems,
+      }))
+      .sort((a, b) => a.label.localeCompare(b.label));
+  }, [items]);
 
   if (loading) {
     return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" color={bc.primary} />
+      <View style={styles.container}>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.content}
+        >
+          <View style={styles.header}>
+            <View style={styles.skeletonTitle} />
+            <View style={[styles.skeletonText, { marginTop: 8 }]} />
+          </View>
+          {[...Array(3)].map((_, i) => (
+            <SkeletonCard key={i} />
+          ))}
+        </ScrollView>
       </View>
     );
   }
 
   if (items.length === 0) {
     return (
-      <View style={styles.centered}>
-        <Text style={styles.emptyIcon}>📄</Text>
-        <Text style={styles.emptyTitle}>{t('usefulInfo.title')}</Text>
-        <Text style={styles.emptyText}>{t('usefulInfo.empty')}</Text>
+      <View style={styles.container}>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.content}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={() => loadItems(true)}
+              colors={[bc.primary]}
+              tintColor={bc.primary}
+            />
+          }
+        >
+          <View style={styles.emptyContainer}>
+            <View style={styles.emptyIconBox}>
+              <Text style={styles.emptyIcon}>📄</Text>
+            </View>
+            <Text style={styles.emptyTitle}>{t('usefulInfo.title')}</Text>
+            <Text style={styles.emptyText}>{t('usefulInfo.empty')}</Text>
+          </View>
+        </ScrollView>
       </View>
     );
   }
@@ -199,83 +307,135 @@ export const UsefulInfoScreen: React.FC = () => {
         <View style={styles.header}>
           <Text style={styles.headerTitle}>{t('usefulInfo.title')}</Text>
           <Text style={styles.headerSubtitle}>{t('usefulInfo.subtitle')}</Text>
+          <View style={styles.headerDivider} />
         </View>
 
-        {/* Cards */}
-        {items.map((item) => (
-          <TouchableOpacity
-            key={item._id}
-            style={styles.card}
-            onPress={() => setSelected(item)}
-            activeOpacity={0.75}
+        {/* Grouped Categories */}
+        {groupedItems.map((group, groupIdx) => (
+          <Animated.View
+            key={group.category}
+            style={[
+              styles.categorySection,
+              {
+                opacity: fadeAnim,
+                transform: [
+                  {
+                    translateY: fadeAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [20, 0],
+                    }),
+                  },
+                ],
+              },
+            ]}
           >
-            {item.coverImageUrl ? (
-              <Image
-                source={{ uri: item.coverImageUrl }}
-                style={styles.cardCover}
-                resizeMode="cover"
-              />
-            ) : null}
-            <View style={styles.cardBody}>
-              <Text style={styles.cardIcon}>{getIcon(item)}</Text>
-              <View style={styles.cardText}>
-                <Text style={styles.cardTitle}>{localized(item.title, item.title_en)}</Text>
-                {item.content ? (
-                  <Text style={styles.cardPreview} numberOfLines={2}>
-                    {stripHtml(localized(item.content, item.content_en))}
-                  </Text>
-                ) : null}
+            {/* Category Header */}
+            <View style={styles.categoryHeader}>
+              <View
+                style={[
+                  styles.categoryBadge,
+                  { backgroundColor: getCategoryConfig(group.category).bgColor },
+                ]}
+              >
+                <Text style={styles.categoryIcon}>
+                  {getCategoryConfig(group.category).icon}
+                </Text>
+                <Text
+                  style={[
+                    styles.categoryLabel,
+                    { color: getCategoryConfig(group.category).color },
+                  ]}
+                >
+                  {group.label}
+                </Text>
               </View>
-              <Text style={styles.cardArrow}>›</Text>
+              <View
+                style={[
+                  styles.categoryDot,
+                  { backgroundColor: getCategoryConfig(group.category).color },
+                ]}
+              />
             </View>
-          </TouchableOpacity>
+
+            {/* Category Items */}
+            {group.items.map((item, itemIdx) => (
+              <Animated.View
+                key={item._id}
+                style={{
+                  opacity: fadeAnim,
+                  transform: [
+                    {
+                      translateY: fadeAnim.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [30 + itemIdx * 5, 0],
+                      }),
+                    },
+                  ],
+                }}
+              >
+                <TouchableOpacity
+                  style={styles.card}
+                  onPress={() => setSelected(item)}
+                  activeOpacity={0.7}
+                >
+                  {item.coverImageUrl ? (
+                    <Image
+                      source={{ uri: item.coverImageUrl }}
+                      style={styles.cardCover}
+                      resizeMode="cover"
+                    />
+                  ) : (
+                    <View style={styles.cardCoverPlaceholder}>
+                      <Text style={styles.cardCoverIcon}>
+                        {getCategoryConfig(item.category).icon}
+                      </Text>
+                    </View>
+                  )}
+                  <View style={styles.cardBody}>
+                    <View
+                      style={[
+                        styles.cardIconBox,
+                        {
+                          backgroundColor: getCategoryConfig(item.category)
+                            .bgColor,
+                        },
+                      ]}
+                    >
+                      <Text style={styles.cardIcon}>{getIcon(item)}</Text>
+                    </View>
+                    <View style={styles.cardText}>
+                      <Text style={styles.cardTitle} numberOfLines={2}>
+                        {localized(item.title, item.title_en)}
+                      </Text>
+                      {item.content ? (
+                        <Text style={styles.cardPreview} numberOfLines={1}>
+                          {stripHtml(
+                            localized(item.content, item.content_en)
+                          )}
+                        </Text>
+                      ) : null}
+                    </View>
+                    <View style={styles.cardArrowBox}>
+                      <Text style={styles.cardArrow}>›</Text>
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              </Animated.View>
+            ))}
+          </Animated.View>
         ))}
 
         <View style={{ height: spacing.xxl }} />
       </ScrollView>
 
       {/* Detail Modal */}
-      <Modal
+      <InfoDetailModal
         visible={!!selected}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setSelected(null)}
-      >
-        {selected && (
-          <View style={styles.modal}>
-            {/* Modal header */}
-            <View style={styles.modalHeader}>
-              <TouchableOpacity
-                style={styles.closeBtn}
-                onPress={() => setSelected(null)}
-              >
-                <Text style={styles.closeBtnText}>✕</Text>
-              </TouchableOpacity>
-              <Text style={styles.modalHeaderTitle} numberOfLines={1}>
-                {getIcon(selected)}  {localized(selected.title, selected.title_en)}
-              </Text>
-            </View>
-
-            <ScrollView
-              style={styles.modalScroll}
-              contentContainerStyle={styles.modalContent}
-              showsVerticalScrollIndicator={false}
-            >
-              {selected.coverImageUrl ? (
-                <Image
-                  source={{ uri: selected.coverImageUrl }}
-                  style={styles.modalCover}
-                  resizeMode="cover"
-                />
-              ) : null}
-
-              <HtmlContent html={localized(selected.content, selected.content_en)} />
-
-              <View style={{ height: spacing.xxl }} />
-            </ScrollView>
-          </View>
-        )}
-      </Modal>
+        item={selected}
+        categoryConfig={selected ? getCategoryConfig(selected.category) : getCategoryConfig('general')}
+        onClose={() => setSelected(null)}
+        localized={localized}
+      />
     </View>
   );
 };
@@ -285,77 +445,157 @@ export const UsefulInfoScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   content: { paddingBottom: spacing.xxl },
-  centered: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: spacing.lg },
 
+  // ─ Header
   header: {
     paddingHorizontal: spacing.md,
     paddingTop: spacing.lg,
     paddingBottom: spacing.md,
   },
-  headerTitle: { ...typography.h2, color: colors.text.primary },
+  headerTitle: { ...typography.h2, color: colors.text.primary, fontWeight: '700' },
   headerSubtitle: { ...typography.body2, color: colors.text.secondary, marginTop: 4 },
+  headerDivider: {
+    height: 2,
+    backgroundColor: colors.border,
+    marginTop: spacing.md,
+    borderRadius: 1,
+  },
 
+  // ─ Skeleton Loaders
+  skeletonCover: {
+    width: '100%',
+    height: 140,
+    backgroundColor: colors.border,
+    borderRadius: 14,
+  },
+  skeletonIcon: {
+    width: 48,
+    height: 48,
+    backgroundColor: colors.border,
+    borderRadius: 12,
+    flexShrink: 0,
+  },
+  skeletonTitle: {
+    width: '60%',
+    height: 18,
+    backgroundColor: colors.border,
+    borderRadius: 6,
+  },
+  skeletonText: {
+    width: '80%',
+    height: 12,
+    backgroundColor: colors.border,
+    borderRadius: 4,
+  },
+
+  // ─ Empty State
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: spacing.xxl,
+    paddingHorizontal: spacing.lg,
+  },
+  emptyIconBox: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: colors.border,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: spacing.lg,
+  },
+  emptyIcon: { fontSize: 52 },
+  emptyTitle: { ...typography.h3, color: colors.text.primary, marginBottom: spacing.sm },
+  emptyText: { ...typography.body1, color: colors.text.secondary, textAlign: 'center' },
+
+  // ─ Category Section
+  categorySection: {
+    marginBottom: spacing.lg,
+  },
+  categoryHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    marginBottom: spacing.md,
+  },
+  categoryBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.md,
+    paddingVertical: 6,
+    borderRadius: 20,
+    gap: 6,
+  },
+  categoryIcon: { fontSize: 18 },
+  categoryLabel: { ...typography.body2, fontWeight: '600', fontSize: 13 },
+  categoryDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+
+  // ─ Card
   card: {
     marginHorizontal: spacing.md,
-    marginBottom: spacing.sm,
+    marginBottom: spacing.md,
     backgroundColor: colors.surface,
-    borderRadius: 14,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: colors.border,
     overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
   },
-  cardCover: { width: '100%', height: 140 },
+  cardCover: { width: '100%', height: 150 },
+  cardCoverPlaceholder: {
+    width: '100%',
+    height: 150,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  cardCoverIcon: { fontSize: 48 },
   cardBody: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: spacing.md,
-    gap: spacing.sm,
+    gap: spacing.md,
   },
-  cardIcon: { fontSize: 28, flexShrink: 0 },
-  cardText: { flex: 1 },
-  cardTitle: { ...typography.body1, color: colors.text.primary, fontWeight: '600' },
-  cardPreview: { ...typography.body2, color: colors.text.secondary, marginTop: 2 },
-  cardArrow: { fontSize: 22, color: colors.text.secondary, flexShrink: 0 },
-
-  emptyIcon: { fontSize: 48, marginBottom: spacing.md },
-  emptyTitle: { ...typography.h3, color: colors.text.primary, marginBottom: spacing.sm },
-  emptyText: { ...typography.body1, color: colors.text.secondary },
-
-  // Modal
-  modal: { flex: 1, backgroundColor: colors.background },
-  modalHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    gap: spacing.sm,
-  },
-  closeBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    alignItems: 'center',
+  cardIconBox: {
+    width: 56,
+    height: 56,
+    borderRadius: 14,
     justifyContent: 'center',
+    alignItems: 'center',
     flexShrink: 0,
   },
-  closeBtnText: { fontSize: 14, color: colors.text.secondary },
-  modalHeaderTitle: {
+  cardIcon: { fontSize: 28 },
+  cardText: { flex: 1, justifyContent: 'center' },
+  cardTitle: {
     ...typography.body1,
     color: colors.text.primary,
     fontWeight: '600',
-    flex: 1,
+    lineHeight: 20,
   },
-  modalScroll: { flex: 1 },
-  modalContent: { padding: spacing.md },
-  modalCover: {
-    width: '100%',
-    height: 200,
-    borderRadius: 12,
-    marginBottom: spacing.lg,
+  cardPreview: {
+    ...typography.body2,
+    color: colors.text.secondary,
+    marginTop: 4,
+    lineHeight: 16,
   },
+  cardArrowBox: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: colors.border,
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexShrink: 0,
+  },
+  cardArrow: { fontSize: 18, color: colors.text.secondary, fontWeight: '600' },
 });
