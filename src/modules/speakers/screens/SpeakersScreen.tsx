@@ -29,6 +29,7 @@ interface Speaker {
   _id: string;
   names: string;
   description?: string;
+  descriptionEN?: string;
   location?: string;
   profession?: string;
   role?: string;
@@ -47,9 +48,10 @@ interface SpeakerWithSessionCount extends Speaker {
   sessionCount: number;
 }
 
-const SpeakerCard: React.FC<{ speaker: Speaker; onPress: () => void }> = ({
+const SpeakerCard: React.FC<{ speaker: Speaker; onPress: () => void; currentLanguage: string }> = ({
   speaker,
   onPress,
+  currentLanguage,
 }) => {
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
@@ -72,6 +74,11 @@ const SpeakerCard: React.FC<{ speaker: Speaker; onPress: () => void }> = ({
   const cardStyle = speaker.isInternational
     ? styles.cardInternational
     : styles.card;
+
+  // Get description based on language
+  const displayDescription = currentLanguage.startsWith('en')
+    ? (speaker.descriptionEN || speaker.description)
+    : (speaker.description || speaker.descriptionEN);
 
   return (
     <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
@@ -114,6 +121,11 @@ const SpeakerCard: React.FC<{ speaker: Speaker; onPress: () => void }> = ({
               📍 {speaker.location}
             </Text>
           )}
+          {!!displayDescription && (
+            <Text style={styles.cardDescription} numberOfLines={3}>
+              {displayDescription}
+            </Text>
+          )}
           <View style={styles.cardFooter}>
             {speaker.isInternational ? (
               <View style={styles.intlBadge}>
@@ -134,7 +146,7 @@ const SpeakerCard: React.FC<{ speaker: Speaker; onPress: () => void }> = ({
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 
 export const SpeakersScreen: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { activeEventId } = useEvent();
   const bc = useBrandedColors();
 
@@ -145,6 +157,15 @@ export const SpeakersScreen: React.FC = () => {
   const [speakerSessionCounts, setSpeakerSessionCounts] = useState<
     Record<string, number>
   >({});
+
+  // Get description based on current language
+  const getDescription = (speaker: Speaker): string | undefined => {
+    const currentLang = i18n?.language || 'es';
+    if (currentLang.startsWith('en')) {
+      return speaker.descriptionEN || speaker.description;
+    }
+    return speaker.description || speaker.descriptionEN;
+  };
 
   const loadSpeakers = useCallback(
     async (isRefresh = false) => {
@@ -282,6 +303,7 @@ export const SpeakersScreen: React.FC = () => {
           <SpeakerCard
             speaker={item}
             onPress={() => handleSelectSpeaker(item)}
+            currentLanguage={i18n?.language || 'es'}
           />
         )}
       />
@@ -411,6 +433,11 @@ const styles = StyleSheet.create({
     ...typography.body2,
     color: colors.text.secondary,
     fontSize: 12,
+  },
+  cardDescription: {
+    fontSize: 14, // Generic font size
+    color: "#6b7280", // Generic gray color
+    marginTop: 4, // Generic spacing
   },
 
   intlBadge: {

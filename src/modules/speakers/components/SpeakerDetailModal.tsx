@@ -20,6 +20,7 @@ interface Speaker {
   _id: string;
   names: string;
   description?: string;
+  descriptionEN?: string;
   location?: string;
   profession?: string;
   role?: string;
@@ -55,12 +56,22 @@ const formatDateShort = (d: string) =>
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export const SpeakerDetailModal: React.FC<Props> = ({ visible, speaker, onClose }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { activeEventId } = useEvent();
   const bc = useBrandedColors();
 
   const [speakerSessions, setSpeakerSessions] = useState<SpeakerSession[]>([]);
   const [sessionsLoading, setSessionsLoading] = useState(false);
+
+  // Get description based on current language
+  const getDisplayDescription = (): string | undefined => {
+    if (!speaker) return undefined;
+    const currentLang = i18n?.language || 'es';
+    if (currentLang.startsWith('en')) {
+      return speaker.descriptionEN || speaker.description;
+    }
+    return speaker.description || speaker.descriptionEN;
+  };
 
   const loadSpeakerSessions = useCallback(async (speakerId: string) => {
     if (!activeEventId) return;
@@ -149,8 +160,8 @@ export const SpeakerDetailModal: React.FC<Props> = ({ visible, speaker, onClose 
               <Text style={styles.modalLocation}>📍 {speaker.location}</Text>
             )}
 
-            {!!speaker.description && (
-              <Text style={styles.modalDescription}>{speaker.description}</Text>
+            {!!getDisplayDescription() && (
+              <Text style={styles.modalDescription}>{getDisplayDescription()}</Text>
             )}
 
             {/* Sessions */}
