@@ -178,8 +178,9 @@ const HtmlContent: React.FC<{ html: string }> = ({ html }) => {
         
         /* Emphasis */
         strong { 
-          font-weight: 700; 
+          font-weight: 900; 
           color: #000;
+          font-size: 18px;
         }
         
         em { 
@@ -190,7 +191,7 @@ const HtmlContent: React.FC<{ html: string }> = ({ html }) => {
         /* Dividers */
         hr { 
           border: none; 
-          border-top: 2px solid #e8e8e8; 
+          border-top: 2px solid #858585; 
           margin: 20px 0;
         }
         
@@ -201,7 +202,7 @@ const HtmlContent: React.FC<{ html: string }> = ({ html }) => {
           max-height: 400px;
           object-fit: contain;
           border-radius: 12px;
-          margin: 16px 0;
+          margin: 30px 0;
           display: block;
           box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
           transition: all 0.3s ease;
