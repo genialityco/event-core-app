@@ -28,7 +28,6 @@ export default function WelcomeScreen() {
       <View style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.appName}>{clientConfig.name}</Text>
           <Text style={styles.title}>{t("welcome.title")}</Text>
           <Text style={styles.subtitle}>{t("welcome.subtitle")}</Text>
         </View>

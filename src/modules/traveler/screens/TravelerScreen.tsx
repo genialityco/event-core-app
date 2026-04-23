@@ -15,10 +15,12 @@ import {
   UIManager,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import dayjs from 'dayjs';
 import { useTranslation } from '@/src/i18n';
 import { colors, spacing, typography, useBrandedColors } from '@/src/theme';
 import { useEvent } from '@/context/EventContext';
 import { travelerService } from '../services/traveler.service';
+import { DateInput } from '../components/DateInput';
 import {
   EMPTY_TRAVELER_FORM,
   type TravelerInfoForm,
@@ -46,6 +48,7 @@ const FIELD_KEY_MAP: Record<string, keyof TravelerInfoForm> = {
 };
 
 const MULTILINE_FIELDS = new Set(['dietaryRestrictions']);
+const DATE_FIELDS = new Set(['outboundArrivalTime', 'returnArrivalTime']);
 
 type SectionKey = SectionConfig['key'];
 
@@ -175,10 +178,11 @@ interface SectionCardProps {
   onChange: (key: keyof TravelerInfoForm, value: string) => void;
   primary: string;
   t: (key: string, opts?: any) => string;
+  outboundDate?: string; // Para validar fecha de regreso
 }
 
 const SectionCard: React.FC<SectionCardProps> = ({
-  section, form, isExpanded, onToggle, onChange, primary, t,
+  section, form, isExpanded, onToggle, onChange, primary, t, outboundDate,
 }) => {
   const iconMeta = SECTION_ICONS[section.key as SectionKey] ?? { name: 'list-outline' };
   const filled = isSectionFilled(section, form);
@@ -223,7 +227,20 @@ const SectionCard: React.FC<SectionCardProps> = ({
           {section.fields.map((fieldCfg) => {
             const formKey = FIELD_KEY_MAP[fieldCfg.key];
             if (!formKey) return null;
-            return (
+            
+            const isDateField = DATE_FIELDS.has(fieldCfg.key);
+            
+            return isDateField ? (
+              <DateInput
+                key={fieldCfg.key}
+                label={t(`traveler.fields.${fieldCfg.key}`, { defaultValue: fieldCfg.label })}
+                value={form[formKey] as string}
+                onChangeText={(v) => onChange(formKey, v)}
+                required={fieldCfg.required}
+                primary={primary}
+                minDate={fieldCfg.key === 'returnArrivalTime' && outboundDate ? dayjs(outboundDate).toDate() : undefined}
+              />
+            ) : (
               <SmartInput
                 key={fieldCfg.key}
                 config={{
@@ -300,10 +317,19 @@ export const TravelerScreen: React.FC = () => {
       travelerService.getMyInfo(activeEventId).catch(() => null),
       travelerService.getFormConfig(activeEventId).catch(() => null),
     ]).then(([info, config]) => {
+      let initialForm = { ...EMPTY_TRAVELER_FORM };
+      
       if (info) {
         const { _id, ...rest } = info as any;
-        setForm(rest);
+        initialForm = rest;
+      } else {
+        // Si es la primera vez, establece fechas por defecto
+        initialForm.outboundArrivalTime = dayjs().format('YYYY-MM-DD HH:mm');
+        initialForm.returnArrivalTime = dayjs().add(1, 'day').format('YYYY-MM-DD HH:mm');
       }
+      
+      setForm(initialForm);
+      
       if (config) {
         setFormConfig(config);
         const first = config.sections.find((s) => s.enabled);
@@ -403,6 +429,7 @@ export const TravelerScreen: React.FC = () => {
               onChange={handleChange}
               primary={bc.primary}
               t={t}
+              outboundDate={form.outboundArrivalTime}
             />
           ))}
 

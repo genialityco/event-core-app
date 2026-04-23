@@ -30,10 +30,11 @@ interface Speaker {
   names: string;
   description?: string;
   descriptionEN?: string;
-  location?: string;
+  organization?: string;
   profession?: string;
   role?: string;
   isInternational?: boolean;
+
   imageUrl?: string;
 }
 
@@ -48,11 +49,11 @@ interface SpeakerWithSessionCount extends Speaker {
   sessionCount: number;
 }
 
-const SpeakerCard: React.FC<{ speaker: Speaker; onPress: () => void; currentLanguage: string }> = ({
-  speaker,
-  onPress,
-  currentLanguage,
-}) => {
+const SpeakerCard: React.FC<{
+  speaker: Speaker;
+  onPress: () => void;
+  currentLanguage: string;
+}> = ({ speaker, onPress, currentLanguage }) => {
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
   const handlePressIn = () => {
@@ -76,9 +77,9 @@ const SpeakerCard: React.FC<{ speaker: Speaker; onPress: () => void; currentLang
     : styles.card;
 
   // Get description based on language
-  const displayDescription = currentLanguage.startsWith('en')
-    ? (speaker.descriptionEN || speaker.description)
-    : (speaker.description || speaker.descriptionEN);
+  const displayDescription = currentLanguage.startsWith("en")
+    ? speaker.descriptionEN || speaker.description
+    : speaker.description || speaker.descriptionEN;
 
   return (
     <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
@@ -116,14 +117,14 @@ const SpeakerCard: React.FC<{ speaker: Speaker; onPress: () => void; currentLang
               {speaker.role}
             </Text>
           )}
-          {!!speaker.location && (
-            <Text style={styles.cardLocation} numberOfLines={1}>
-              📍 {speaker.location}
+          {!!speaker.profession && (
+            <Text style={styles.cardProfession} numberOfLines={2}>
+              {speaker.profession}
             </Text>
           )}
-          {!!displayDescription && (
-            <Text style={styles.cardDescription} numberOfLines={3}>
-              {displayDescription}
+          {!!speaker.organization && (
+            <Text style={styles.cardOrganization} numberOfLines={2}>
+              {speaker.organization}
             </Text>
           )}
           <View style={styles.cardFooter}>
@@ -160,8 +161,8 @@ export const SpeakersScreen: React.FC = () => {
 
   // Get description based on current language
   const getDescription = (speaker: Speaker): string | undefined => {
-    const currentLang = i18n?.language || 'es';
-    if (currentLang.startsWith('en')) {
+    const currentLang = i18n?.language || "es";
+    if (currentLang.startsWith("en")) {
       return speaker.descriptionEN || speaker.description;
     }
     return speaker.description || speaker.descriptionEN;
@@ -303,7 +304,7 @@ export const SpeakersScreen: React.FC = () => {
           <SpeakerCard
             speaker={item}
             onPress={() => handleSelectSpeaker(item)}
-            currentLanguage={i18n?.language || 'es'}
+            currentLanguage={i18n?.language || "es"}
           />
         )}
       />
@@ -401,12 +402,14 @@ const styles = StyleSheet.create({
   },
   cardBody: {
     flex: 1,
-    padding: spacing.md,
-    justifyContent: "space-between",
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    justifyContent: "center",
+    gap: 2,
   },
   cardFooter: {
     alignItems: "flex-end",
-    marginTop: spacing.xs,
+    marginTop: 4,
   },
   cardHeader: {
     flexDirection: "row",
@@ -418,26 +421,27 @@ const styles = StyleSheet.create({
     ...typography.body1,
     color: colors.text.primary,
     fontWeight: "700",
-    flex: 1,
-    lineHeight: 22,
+    lineHeight: 20,
+    marginBottom: 2,
   },
   cardProfession: {
     ...typography.body2,
     color: colors.text.secondary,
     fontSize: 12,
-    fontWeight: "500",
-    marginBottom: spacing.xs,
-    lineHeight: 18,
-  },
-  cardLocation: {
-    ...typography.body2,
-    color: colors.text.secondary,
-    fontSize: 12,
+    fontWeight: "400",
+    lineHeight: 16,
   },
   cardDescription: {
     fontSize: 14, // Generic font size
     color: "#6b7280", // Generic gray color
     marginTop: 4, // Generic spacing
+  },
+  cardOrganization: {
+    ...typography.body2,
+    color: colors.text.secondary,
+    fontSize: 12,
+    fontWeight: "500",
+    lineHeight: 16,
   },
 
   intlBadge: {

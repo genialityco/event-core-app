@@ -600,7 +600,7 @@ const styles = StyleSheet.create({
   },
   modalCover: {
     width: "100%",
-    height: 220,
+    height: 170,
     borderRadius: 16,
     marginBottom: spacing.lg,
   },
