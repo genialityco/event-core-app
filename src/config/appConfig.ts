@@ -4,26 +4,28 @@
  * El orden en el array determina el orden de los tabs.
  */
 export const appConfig = {
-  appName: 'AILS News',
+  appName: "AILS News",
   enabledModules: [
-    'traveler',
-    'hotels',
-    'agenda',
-    'attendance',
-    'speakers',
-    'usefulInfo',
-    'photos',
+    "traveler",
+    "hotels",
+    "agenda",
+    "attendance",
+    "speakers",
+    "usefulInfo",
+    "photos",
+    "listAttendees",
   ] as const,
 } satisfies AppConfig;
 
 export type ModuleId =
-  | 'traveler'
-  | 'hotels'
-  | 'agenda'
-  | 'attendance'
-  | 'speakers'
-  | 'usefulInfo'
-  | 'photos';
+  | "traveler"
+  | "hotels"
+  | "agenda"
+  | "attendance"
+  | "speakers"
+  | "usefulInfo"
+  | "photos"
+  | "listAttendees";
 
 interface AppConfig {
   appName: string;

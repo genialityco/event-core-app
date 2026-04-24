@@ -30,9 +30,13 @@ import { Linking } from "react-native";
 import { ImagePromoModal } from "@/components/ImagePromoModal"; // si lo sacas a componente
 
 const { width } = Dimensions.get("window");
+let globalVersionChecked = false;
+let globalPushRegistrationAttempted = false;
 
 export default function ProtectedLayout() {
-  const [showPromo, setShowPromo] = useState(clientConfig.promoModal?.enabled ?? false);
+  const [showPromo, setShowPromo] = useState(
+    clientConfig.promoModal?.enabled ?? false,
+  );
   const { isLoggedIn, isLoading, userId } = useAuth();
   const [surveys, setSurveys] = useState<Survey[]>([]);
   const [drawerVisible, setDrawerVisible] = useState(false);
@@ -45,6 +49,7 @@ export default function ProtectedLayout() {
   const notificationListener = useRef<Notifications.Subscription | null>(null);
   const responseListener = useRef<Notifications.Subscription | null>(null);
   const pushTokenRegistered = useRef(false);
+  const pushPermissionWarned = useRef(false);
   const versionChecked = useRef(false);
   const { addNotification, markAsRead } = useNotifications();
   const [isAppReady, setIsAppReady] = useState(false);
@@ -72,13 +77,18 @@ export default function ProtectedLayout() {
       await Notifications.getPermissionsAsync();
     let finalStatus = existingStatus;
 
-    if (existingStatus !== "granted") {
+    if (existingStatus === "undetermined") {
       const { status } = await Notifications.requestPermissionsAsync();
       finalStatus = status;
     }
 
     if (finalStatus !== "granted") {
-      console.error("No se concedieron permisos para las notificaciones push.");
+      if (!pushPermissionWarned.current) {
+        pushPermissionWarned.current = true;
+        console.log(
+          "Permisos de notificaciones no concedidos; se omite registro de push token.",
+        );
+      }
       return;
     }
 
@@ -191,8 +201,9 @@ export default function ProtectedLayout() {
   };
 
   useEffect(() => {
-    if (versionChecked.current) return;
+    if (versionChecked.current || globalVersionChecked) return;
     versionChecked.current = true;
+    globalVersionChecked = true;
     const verifyAppVersion = async () => {
       await checkForUpdates();
       await checkStoreVersion();
@@ -219,8 +230,14 @@ export default function ProtectedLayout() {
   // Registrar push token una sola vez cuando userId y organizationId están disponibles
   // useRef guard garantiza ejecución única sin importar re-renders
   useEffect(() => {
-    if (userId && organization?._id && !pushTokenRegistered.current) {
+    if (
+      userId &&
+      organization?._id &&
+      !pushTokenRegistered.current &&
+      !globalPushRegistrationAttempted
+    ) {
       pushTokenRegistered.current = true;
+      globalPushRegistrationAttempted = true;
       registerAndSavePushToken();
     }
   }, [userId, organization?._id]);

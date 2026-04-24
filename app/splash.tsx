@@ -13,7 +13,7 @@ export default function SplashScreen() {
       } else {
         router.replace("/welcome");
       }
-    }, 3000); // 3 segundos de delay
+    }, 5000); // 3 segundos de delay
 
     return () => clearTimeout(timer);
   }, [isLoggedIn]);
