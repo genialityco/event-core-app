@@ -26,10 +26,13 @@ interface Speaker {
 interface Session {
   _id: string;
   title: string;
+  titleEn?: string;
   startDateTime: string;
   endDateTime: string;
   room?: string;
+  roomEn?: string;
   typeSession?: string;
+  typeSessionEn?: string;
   requiresAttendance?: boolean;
   speakers?: Speaker[];
 }
@@ -39,13 +42,18 @@ interface AgendaDoc {
   sessions: Session[];
   isPublished: boolean;
   dressCode?: string;
+  dressCodeEn?: string;
   room?: string;
+  roomEn?: string;
 }
 
 interface SessionWithMeta extends Session {
   agendaId: string;
   agendaDressCode?: string;
   agendaRoom?: string;
+  displayTitle: string;
+  displayRoom?: string;
+  displayTypeSession?: string;
 }
 
 interface DayGroup {
@@ -57,8 +65,24 @@ interface DayGroup {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-const formatTime = (d: string) =>
-  new Date(d).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+const getLocaleFromLanguage = (lang: string) =>
+  lang.toLowerCase().startsWith('en') ? 'en-US' : 'es-CO';
+
+const pickLocalizedValue = ({
+  language,
+  es,
+  en,
+}: {
+  language: string;
+  es?: string;
+  en?: string;
+}) => {
+  const preferEnglish = language.toLowerCase().startsWith('en');
+  return preferEnglish ? (en || es || '') : (es || en || '');
+};
+
+const formatTime = (d: string, locale: string) =>
+  new Date(d).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
 
 const getDuration = (start: string, end: string): string => {
   const mins = Math.round((new Date(end).getTime() - new Date(start).getTime()) / 60000);
@@ -74,18 +98,18 @@ const getDayKey = (d: string) => {
   return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
 };
 
-const getDayShortLabel = (d: string) =>
-  new Date(d).toLocaleDateString('es-CO', { weekday: 'short', day: 'numeric' });
+const getDayShortLabel = (d: string, locale: string) =>
+  new Date(d).toLocaleDateString(locale, { weekday: 'short', day: 'numeric' });
 
-const getDayFullLabel = (d: string) =>
-  new Date(d).toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'short' });
+const getDayFullLabel = (d: string, locale: string) =>
+  new Date(d).toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'short' });
 
 const getTodayKey = () => {
   const now = new Date();
   return `${now.getFullYear()}-${now.getMonth()}-${now.getDate()}`;
 };
 
-function buildDayGroups(sessions: SessionWithMeta[]): DayGroup[] {
+function buildDayGroups(sessions: SessionWithMeta[], locale: string, noDateLabel: string): DayGroup[] {
   const map = new Map<string, SessionWithMeta[]>();
   for (const s of sessions) {
     const key = s.startDateTime ? getDayKey(s.startDateTime) : 'sin-fecha';
@@ -97,9 +121,9 @@ function buildDayGroups(sessions: SessionWithMeta[]): DayGroup[] {
     return {
       key,
       label: first.startDateTime && key !== 'sin-fecha'
-        ? getDayShortLabel(first.startDateTime) : 'Sin fecha',
+        ? getDayShortLabel(first.startDateTime, locale) : noDateLabel,
       fullLabel: first.startDateTime && key !== 'sin-fecha'
-        ? getDayFullLabel(first.startDateTime) : 'Sin fecha',
+        ? getDayFullLabel(first.startDateTime, locale) : noDateLabel,
       sessions: items,
     };
   });
@@ -194,7 +218,8 @@ const SessionCard: React.FC<{
   primary: string;
   isLast: boolean;
 }> = ({ session, isAttending, onAttend, onCancel, attendLoading, onSpeakerPress, primary, isLast }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const locale = getLocaleFromLanguage(i18n.language);
   const duration = session.startDateTime && session.endDateTime
     ? getDuration(session.startDateTime, session.endDateTime) : '';
 
@@ -203,7 +228,7 @@ const SessionCard: React.FC<{
       {/* Time column */}
       <View style={rowStyles.timeCol}>
         <Text style={rowStyles.timeText}>
-          {session.startDateTime ? formatTime(session.startDateTime) : '--:--'}
+          {session.startDateTime ? formatTime(session.startDateTime, locale) : '--:--'}
         </Text>
       </View>
 
@@ -217,10 +242,10 @@ const SessionCard: React.FC<{
       <View style={[rowStyles.card, { borderLeftColor: primary }]}>
         {/* Type + duration row */}
         <View style={rowStyles.metaRow}>
-          {session.typeSession ? (
+          {session.displayTypeSession ? (
             <View style={[rowStyles.typeBadge, { backgroundColor: primary + '15' }]}>
               <Text style={[rowStyles.typeBadgeText, { color: primary }]}>
-                {session.typeSession}
+                {session.displayTypeSession}
               </Text>
             </View>
           ) : null}
@@ -233,13 +258,13 @@ const SessionCard: React.FC<{
         </View>
 
         {/* Title */}
-        <Text style={rowStyles.title}>{session.title}</Text>
+        <Text style={rowStyles.title}>{session.displayTitle}</Text>
 
         {/* Room */}
-        {!!session.room && (
+        {!!session.displayRoom && (
           <View style={rowStyles.roomRow}>
             <Ionicons name="location-outline" size={13} color={colors.text.secondary} />
-            <Text style={rowStyles.roomText}>{session.room}</Text>
+            <Text style={rowStyles.roomText}>{session.displayRoom}</Text>
           </View>
         )}
 
@@ -247,7 +272,7 @@ const SessionCard: React.FC<{
         {!!session.endDateTime && (
           <View style={rowStyles.endTimeRow}>
             <Ionicons name="arrow-forward-outline" size={12} color={colors.text.disabled} />
-            <Text style={rowStyles.endTimeText}>{formatTime(session.endDateTime)}</Text>
+            <Text style={rowStyles.endTimeText}>{formatTime(session.endDateTime, locale)}</Text>
           </View>
         )}
 
@@ -448,9 +473,11 @@ const rowStyles = StyleSheet.create({
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 
 export const AgendaScreen: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { activeEventId } = useEvent();
   const bc = useBrandedColors();
+  const locale = getLocaleFromLanguage(i18n.language);
+  const noDateLabel = i18n.language.toLowerCase().startsWith('en') ? 'No date' : 'Sin fecha';
 
   const [agendas, setAgendas] = useState<AgendaDoc[]>([]);
   const [myAttendances, setMyAttendances] = useState<string[]>([]);
@@ -529,8 +556,31 @@ export const AgendaScreen: React.FC = () => {
       a.sessions.map((s) => ({
         ...s,
         agendaId: a._id,
-        agendaDressCode: a.dressCode,
-        agendaRoom: a.room,
+        agendaDressCode: pickLocalizedValue({
+          language: i18n.language,
+          es: a.dressCode,
+          en: a.dressCodeEn,
+        }),
+        agendaRoom: pickLocalizedValue({
+          language: i18n.language,
+          es: a.room,
+          en: a.roomEn,
+        }),
+        displayTitle: pickLocalizedValue({
+          language: i18n.language,
+          es: s.title,
+          en: s.titleEn,
+        }),
+        displayRoom: pickLocalizedValue({
+          language: i18n.language,
+          es: s.room,
+          en: s.roomEn,
+        }),
+        displayTypeSession: pickLocalizedValue({
+          language: i18n.language,
+          es: s.typeSession,
+          en: s.typeSessionEn,
+        }),
       })),
     )
     .sort((a, b) => {
@@ -539,7 +589,7 @@ export const AgendaScreen: React.FC = () => {
       return new Date(a.startDateTime).getTime() - new Date(b.startDateTime).getTime();
     });
 
-  const dayGroups = buildDayGroups(allSessions);
+  const dayGroups = buildDayGroups(allSessions, locale, noDateLabel);
 
   // Select today's day if present, otherwise first day
   const resolvedActiveKey = (() => {
@@ -645,7 +695,7 @@ export const AgendaScreen: React.FC = () => {
             onAttend={() => handleAttend(session._id)}
             onCancel={() => handleCancel(session._id)}
             attendLoading={!!attendLoading[session._id]}
-            onSpeakerPress={(id) => router.push('/speaker/' + id)}
+            onSpeakerPress={(id) => router.push({ pathname: '/(app)/speaker/[id]', params: { id } })}
             primary={bc.primary}
             isLast={idx === arr.length - 1}
           />

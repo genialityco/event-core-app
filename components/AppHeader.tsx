@@ -71,8 +71,9 @@ const styles = StyleSheet.create({
   },
   divider: {
     width: 1,
-    height: 70,
+    height: 80,
     backgroundColor: "#6e6e6e",
+    alignItems: "flex-end",
   },
   settingsButton: {
     padding: 4,

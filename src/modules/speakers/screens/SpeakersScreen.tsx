@@ -72,9 +72,8 @@ const SpeakerCard: React.FC<{
     }).start();
   };
 
-  const cardStyle = speaker.isInternational
-    ? styles.cardInternational
-    : styles.card;
+  // All cards use the same blue international style
+  const cardStyle = styles.cardUnified;
 
   // Get description based on language
   const displayDescription = currentLanguage.startsWith("en")
@@ -350,23 +349,8 @@ const styles = StyleSheet.create({
 
   grid: { paddingHorizontal: spacing.md, paddingBottom: 100 },
 
-  // Card
-  card: {
-    flexDirection: "row",
-    height: 120,
-    backgroundColor: colors.surface,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: "#FFC107",
-    overflow: "hidden",
-    marginBottom: spacing.sm,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  cardInternational: {
+  // Card - All cards use the same blue style
+  cardUnified: {
     flexDirection: "row",
     height: 120,
     backgroundColor: colors.surface,
