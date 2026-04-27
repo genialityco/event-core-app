@@ -13,6 +13,7 @@ import { useTranslation } from '@/src/i18n';
 import { colors, spacing, typography, useBrandedColors } from '@/src/theme';
 import { useEvent } from '@/context/EventContext';
 import { get } from '@/src/core';
+import { getCountryFlag, formatCountryLabel } from '@/src/utils/countries';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -24,8 +25,9 @@ interface Speaker {
   location?: string;
   profession?: string;
   role?: string;
+  roleEN?: string;
   organization?: string;
-  isInternational?: boolean;
+  country?: string;
   imageUrl?: string;
   image?: string;
 }
@@ -62,6 +64,10 @@ export const SpeakerDetailModal: React.FC<Props> = ({ visible, speaker, onClose 
 
   const [speakerSessions, setSpeakerSessions] = useState<SpeakerSession[]>([]);
   const [sessionsLoading, setSessionsLoading] = useState(false);
+
+  const displayRole = i18n?.language?.startsWith('en')
+    ? (speaker?.roleEN || speaker?.role)
+    : (speaker?.role || speaker?.roleEN);
 
   // Get description based on current language
   const getDisplayDescription = (): string | undefined => {
@@ -144,16 +150,19 @@ export const SpeakerDetailModal: React.FC<Props> = ({ visible, speaker, onClose 
           </View>
 
           <View style={styles.modalBody}>
-            {speaker.isInternational && (
+            {speaker.country && (
               <View style={styles.intlBadgeModal}>
-                <Text style={styles.intlBadgeModalText}>🌎 Internacional</Text>
+                <Text style={styles.intlBadgeModalText}>
+                  {getCountryFlag(speaker.country)}{' '}
+                  {formatCountryLabel(speaker.country, i18n?.language || 'es')}
+                </Text>
               </View>
             )}
 
             <Text style={styles.modalName}>{speaker.names}</Text>
 
-            {!!speaker.role && (
-              <Text style={styles.modalProfession}>{speaker.role}</Text>
+            {!!displayRole && (
+              <Text style={styles.modalProfession}>{displayRole}</Text>
             )}
 
             {!!speaker.location && (

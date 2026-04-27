@@ -20,8 +20,8 @@ const es = {
     channel: "Canal",
     position: "Cargo",
     country: "País",
-    emptyTitle: "No hay asistentes activados",
-    emptyText: "Todavía no hay usuarios activados para este evento.",
+    emptyTitle: "No hay asistentes disponibles",
+    emptyText: "Todavía no hay registros para este evento.",
   },
 
   // Pantalla base

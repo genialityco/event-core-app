@@ -1,0 +1,175 @@
+const COUNTRY_FLAG_EMOJIS: Record<string, string> = {
+  argentina: '🇦🇷',
+  australia: '🇦🇺',
+  austria: '🇦🇹',
+  belgica: '🇧🇪',
+  bolivia: '🇧🇴',
+  brasil: '🇧🇷',
+  canada: '🇨🇦',
+  chile: '🇨🇱',
+  china: '🇨🇳',
+  colombia: '🇨🇴',
+  'costa rica': '🇨🇷',
+  cuba: '🇨🇺',
+  dinamarca: '🇩🇰',
+  ecuador: '🇪🇨',
+  'el salvador': '🇸🇻',
+  espana: '🇪🇸',
+  'estados unidos': '🇺🇸',
+  finlandia: '🇫🇮',
+  francia: '🇫🇷',
+  alemania: '🇩🇪',
+  grecia: '🇬🇷',
+  guatemala: '🇬🇹',
+  honduras: '🇭🇳',
+  india: '🇮🇳',
+  indonesia: '🇮🇩',
+  irlanda: '🇮🇪',
+  italia: '🇮🇹',
+  japon: '🇯🇵',
+  mexico: '🇲🇽',
+  nicaragua: '🇳🇮',
+  noruega: '🇳🇴',
+  'paises bajos': '🇳🇱',
+  panama: '🇵🇦',
+  paraguay: '🇵🇾',
+  peru: '🇵🇪',
+  portugal: '🇵🇹',
+  'puerto rico': '🇵🇷',
+  'reino unido': '🇬🇧',
+  'republica dominicana': '🇩🇴',
+  suecia: '🇸🇪',
+  suiza: '🇨🇭',
+  uruguay: '🇺🇾',
+  venezuela: '🇻🇪',
+  'nueva zelanda': '🇳🇿',
+  'corea del sur': '🇰🇷',
+  filipinas: '🇵🇭',
+  sudafrica: '🇿🇦',
+};
+
+const COUNTRY_LABELS: Record<string, { es: string; en: string }> = {
+  argentina: { es: 'Argentina', en: 'Argentina' },
+  australia: { es: 'Australia', en: 'Australia' },
+  austria: { es: 'Austria', en: 'Austria' },
+  belgica: { es: 'Bélgica', en: 'Belgium' },
+  bolivia: { es: 'Bolivia', en: 'Bolivia' },
+  brasil: { es: 'Brasil', en: 'Brazil' },
+  canada: { es: 'Canadá', en: 'Canada' },
+  chile: { es: 'Chile', en: 'Chile' },
+  china: { es: 'China', en: 'China' },
+  colombia: { es: 'Colombia', en: 'Colombia' },
+  'costa rica': { es: 'Costa Rica', en: 'Costa Rica' },
+  cuba: { es: 'Cuba', en: 'Cuba' },
+  dinamarca: { es: 'Dinamarca', en: 'Denmark' },
+  ecuador: { es: 'Ecuador', en: 'Ecuador' },
+  'el salvador': { es: 'El Salvador', en: 'El Salvador' },
+  espana: { es: 'España', en: 'Spain' },
+  'estados unidos': { es: 'Estados Unidos', en: 'United States' },
+  finlandia: { es: 'Finlandia', en: 'Finland' },
+  francia: { es: 'Francia', en: 'France' },
+  alemania: { es: 'Alemania', en: 'Germany' },
+  grecia: { es: 'Grecia', en: 'Greece' },
+  guatemala: { es: 'Guatemala', en: 'Guatemala' },
+  honduras: { es: 'Honduras', en: 'Honduras' },
+  india: { es: 'India', en: 'India' },
+  indonesia: { es: 'Indonesia', en: 'Indonesia' },
+  irlanda: { es: 'Irlanda', en: 'Ireland' },
+  italia: { es: 'Italia', en: 'Italy' },
+  japon: { es: 'Japón', en: 'Japan' },
+  mexico: { es: 'México', en: 'Mexico' },
+  nicaragua: { es: 'Nicaragua', en: 'Nicaragua' },
+  noruega: { es: 'Noruega', en: 'Norway' },
+  'paises bajos': { es: 'Países Bajos', en: 'Netherlands' },
+  panama: { es: 'Panamá', en: 'Panama' },
+  paraguay: { es: 'Paraguay', en: 'Paraguay' },
+  peru: { es: 'Perú', en: 'Peru' },
+  portugal: { es: 'Portugal', en: 'Portugal' },
+  'puerto rico': { es: 'Puerto Rico', en: 'Puerto Rico' },
+  'reino unido': { es: 'Reino Unido', en: 'United Kingdom' },
+  'republica dominicana': { es: 'República Dominicana', en: 'Dominican Republic' },
+  suecia: { es: 'Suecia', en: 'Sweden' },
+  suiza: { es: 'Suiza', en: 'Switzerland' },
+  uruguay: { es: 'Uruguay', en: 'Uruguay' },
+  venezuela: { es: 'Venezuela', en: 'Venezuela' },
+  'nueva zelanda': { es: 'Nueva Zelanda', en: 'New Zealand' },
+  'corea del sur': { es: 'Corea del Sur', en: 'South Korea' },
+  filipinas: { es: 'Filipinas', en: 'Philippines' },
+  sudafrica: { es: 'Sudáfrica', en: 'South Africa' },
+};
+
+export const COUNTRY_OPTIONS = [
+  'Argentina',
+  'Australia',
+  'Austria',
+  'Bélgica',
+  'Bolivia',
+  'Brasil',
+  'Canadá',
+  'Chile',
+  'China',
+  'Colombia',
+  'Costa Rica',
+  'Cuba',
+  'Dinamarca',
+  'Ecuador',
+  'El Salvador',
+  'España',
+  'Estados Unidos',
+  'Finlandia',
+  'Francia',
+  'Alemania',
+  'Grecia',
+  'Guatemala',
+  'Honduras',
+  'India',
+  'Indonesia',
+  'Irlanda',
+  'Italia',
+  'Japón',
+  'México',
+  'Nicaragua',
+  'Noruega',
+  'Países Bajos',
+  'Panamá',
+  'Paraguay',
+  'Perú',
+  'Portugal',
+  'Puerto Rico',
+  'Reino Unido',
+  'República Dominicana',
+  'Suecia',
+  'Suiza',
+  'Uruguay',
+  'Venezuela',
+  'Nueva Zelanda',
+  'Corea del Sur',
+  'Filipinas',
+  'Sudáfrica',
+].sort((a, b) => a.localeCompare(b, 'es'));
+
+const normalizeCountryKey = (value?: string | null) =>
+  (value ?? '')
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+
+export const getCountryFlag = (country?: string | null) => {
+  const key = normalizeCountryKey(country);
+  return COUNTRY_FLAG_EMOJIS[key] ?? '🏳️';
+};
+
+export const formatCountryLabel = (country?: string | null, language: string = 'es') => {
+  const key = normalizeCountryKey(country);
+  const entry = COUNTRY_LABELS[key];
+
+  if (!entry) return country?.trim() ?? '';
+
+  return language.toLowerCase().startsWith('en') ? entry.en : entry.es;
+};
+
+export const formatCountryBadge = (country?: string | null, language: string = 'es') => {
+  if (!country) return '';
+  return `${getCountryFlag(country)} ${formatCountryLabel(country, language)}`;
+};

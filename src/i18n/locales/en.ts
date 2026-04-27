@@ -128,8 +128,8 @@ const en = {
     channel: "Channel",
     position: "Role",
     country: "Country",
-    emptyTitle: "No activated attendees",
-    emptyText: "There are no activated users for this event yet.",
+    emptyTitle: "No attendees available",
+    emptyText: "There are no records for this event yet.",
   },
 
   // Pantalla de bienvenida (antes de auth)

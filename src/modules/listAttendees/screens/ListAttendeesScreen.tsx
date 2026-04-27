@@ -106,13 +106,9 @@ export const ListAttendeesScreen: React.FC = () => {
 
         const items = normalizeResponse(response);
 
-        const activatedAttendees = items.filter(
-          (attendee) => attendee.isActivated === true,
-        );
-
-        setAttendees(activatedAttendees);
+        setAttendees(items);
       } catch (error) {
-        console.error("Error loading activated attendees:", error);
+        console.error("Error loading attendees:", error);
         setAttendees([]);
       } finally {
         setLoading(false);

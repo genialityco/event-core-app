@@ -13,6 +13,7 @@ import { useEvent } from '@/context/EventContext';
 import { useTranslation } from '@/src/i18n';
 import { get } from '@/src/core';
 import { colors, spacing, typography } from '@/src/theme';
+import { getCountryFlag, formatCountryLabel } from '@/src/utils/countries';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -20,10 +21,11 @@ interface SpeakerDetail {
   _id: string;
   names: string;
   role?: string;
+  roleEN?: string;
   organization?: string;
   description?: string;
   imageUrl?: string;
-  isInternational?: boolean;
+  country?: string;
 }
 
 interface AgendaSession {
@@ -57,12 +59,17 @@ const getInitials = (name: string) =>
 export default function SpeakerScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { activeEventId } = useEvent();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   const [speaker, setSpeaker] = useState<SpeakerDetail | null>(null);
   const [sessions, setSessions] = useState<AgendaSession[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const displayRole =
+    i18n?.language?.startsWith('en')
+      ? (speaker?.roleEN || speaker?.role)
+      : (speaker?.role || speaker?.roleEN);
 
   useEffect(() => {
     if (!activeEventId || !id) {
@@ -160,16 +167,19 @@ export default function SpeakerScreen() {
       <Text style={styles.name}>{speaker.names}</Text>
 
       {/* Role / Organization */}
-      {(speaker.role || speaker.organization) && (
+      {(displayRole || speaker.organization) && (
         <Text style={styles.roleOrg}>
-          {[speaker.role, speaker.organization].filter(Boolean).join(' · ')}
+          {[displayRole, speaker.organization].filter(Boolean).join(' · ')}
         </Text>
       )}
 
-      {/* International badge */}
-      {speaker.isInternational && (
+      {/* Country badge */}
+      {speaker.country && (
         <View style={styles.badge}>
-          <Text style={styles.badgeText}>{t('speaker.international')}</Text>
+          <Text style={styles.badgeText}>
+            {getCountryFlag(speaker.country)}{' '}
+            {formatCountryLabel(speaker.country, i18n?.language || 'es')}
+          </Text>
         </View>
       )}
 

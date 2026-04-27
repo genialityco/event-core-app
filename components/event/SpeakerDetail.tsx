@@ -2,10 +2,12 @@ import React, { useEffect, useState } from "react";
 import { View, Image, ScrollView, StyleSheet } from "react-native";
 import { Text, Paragraph, ActivityIndicator } from "react-native-paper";
 import { useLocalSearchParams } from "expo-router";
+import { useTranslation } from '@/src/i18n';
 import dayjs from "dayjs";
 import "dayjs/locale/es";
 import { fetchSpeakerById } from "@/services/api/speakerService";
 import { searchAgendas } from "@/services/api/agendaService";
+import { getCountryFlag, formatCountryLabel } from "@/src/utils/countries";
 
 dayjs.locale("es");
 
@@ -15,7 +17,7 @@ interface Speaker {
   description: string;
   imageUrl: string;
   location: string;
-  isInternational: boolean;
+  country: string;
 }
 
 interface Session {
@@ -30,6 +32,7 @@ interface Session {
 
 export default function SpeakerDetail() {
   const { speakerId, eventId } = useLocalSearchParams();
+  const { i18n } = useTranslation();
   const [speaker, setSpeaker] = useState<Speaker | null>(null);
   const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
@@ -97,9 +100,12 @@ export default function SpeakerDetail() {
         <View style={styles.textContainer}>
           <Text style={styles.label}>CONFERENCISTA</Text>
           <Text style={styles.name}>{speaker.names.toUpperCase()}</Text>
-          <Text style={styles.internationalText}>
-            {speaker.isInternational ? "INTERNACIONAL" : "NACIONAL"}
-          </Text>
+          {!!speaker.country && (
+            <Text style={styles.internationalText}>
+              {getCountryFlag(speaker.country)}{' '}
+              {formatCountryLabel(speaker.country, i18n?.language || 'es')}
+            </Text>
+          )}
         </View>
         <Image source={{ uri: speaker.imageUrl }} style={styles.image} />
       </View>

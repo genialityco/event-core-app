@@ -35,12 +35,6 @@ const SERVICE_PATH = "/pre-registered-attendees";
 function buildQueryParams(params: ListActivatedAttendeesParams) {
   const queryParams: string[] = [];
 
-  /**
-   * Se envía también al backend por si tu controller ya soporta este filtro.
-   * De todas formas abajo se filtra nuevamente en el front.
-   */
-  queryParams.push("isActivated=true");
-
   if (params.organizationId) {
     queryParams.push(
       `organizationId=${encodeURIComponent(params.organizationId)}`,
@@ -91,9 +85,5 @@ export async function listActivatedAttendees(
 
   const attendees = normalizeAttendeesResponse(response);
 
-  /**
-   * Filtro obligatorio en el front:
-   * Solo se devuelven usuarios activados.
-   */
-  return attendees.filter((attendee) => attendee.isActivated === true);
+  return attendees;
 }

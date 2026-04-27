@@ -22,6 +22,7 @@ import { colors, spacing, typography, useBrandedColors } from "@/src/theme";
 import { useEvent } from "@/context/EventContext";
 import { get } from "@/src/core";
 import { SpeakerDetailModal } from "../components/SpeakerDetailModal";
+import { getCountryFlag, formatCountryLabel } from "@/src/utils/countries";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -33,7 +34,8 @@ interface Speaker {
   organization?: string;
   profession?: string;
   role?: string;
-  isInternational?: boolean;
+  roleEN?: string;
+  country?: string;
 
   imageUrl?: string;
 }
@@ -72,13 +74,17 @@ const SpeakerCard: React.FC<{
     }).start();
   };
 
-  // All cards use the same blue international style
+  // All cards use the same blue style
   const cardStyle = styles.cardUnified;
 
   // Get description based on language
   const displayDescription = currentLanguage.startsWith("en")
     ? speaker.descriptionEN || speaker.description
     : speaker.description || speaker.descriptionEN;
+
+  const displayRole = currentLanguage.startsWith("en")
+    ? speaker.roleEN || speaker.role
+    : speaker.role || speaker.roleEN;
 
   return (
     <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
@@ -111,9 +117,9 @@ const SpeakerCard: React.FC<{
           <Text style={styles.cardName} numberOfLines={2}>
             {speaker.names}
           </Text>
-          {!!speaker.role && (
+          {!!displayRole && (
             <Text style={styles.cardProfession} numberOfLines={2}>
-              {speaker.role}
+              {displayRole}
             </Text>
           )}
           {!!speaker.profession && (
@@ -127,13 +133,12 @@ const SpeakerCard: React.FC<{
             </Text>
           )}
           <View style={styles.cardFooter}>
-            {speaker.isInternational ? (
+            {!!speaker.country && (
               <View style={styles.intlBadge}>
-                <Text style={styles.intlBadgeText}>🌎 Internacional</Text>
-              </View>
-            ) : (
-              <View style={styles.nationalBadge}>
-                <Text style={styles.nationalBadgeText}>🇨🇴 Nacional</Text>
+                <Text style={styles.intlBadgeText}>
+                  {getCountryFlag(speaker.country)}{' '}
+                  {formatCountryLabel(speaker.country, currentLanguage || 'es')}
+                </Text>
               </View>
             )}
           </View>

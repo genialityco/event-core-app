@@ -3,10 +3,12 @@ import api from './api';
 interface Speaker {
     _id: string;
     names: string;
+  role?: string;
+  roleEN?: string;
     description: string;
     image: string;
     location: string;
-    isInternational: boolean;
+  country: string;
   }
 
 // Obtener todos los conferencistas (speakers)
