@@ -514,20 +514,6 @@ export const InfoDetailModal: React.FC<InfoDetailModalProps> = ({
             >
               {localized(item.title, item.title_en)}
             </Text>
-
-            <View style={styles.categoryBadgeLarge}>
-              <Text
-                style={[
-                  styles.categoryLabelLarge,
-                  {
-                    color: categoryConfig.color,
-                  },
-                ]}
-              >
-                {categoryConfig.label}
-              </Text>
-            </View>
-
             <View style={styles.divider} />
 
             <HtmlContent html={localized(item.content, item.content_en)} />

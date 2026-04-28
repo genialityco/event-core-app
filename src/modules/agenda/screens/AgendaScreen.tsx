@@ -340,7 +340,7 @@ const rowStyles = StyleSheet.create({
     width: 52,
     paddingTop: 14,
     alignItems: 'flex-end',
-    paddingRight: 10,
+    paddingRight: 22,
   },
   timeText: {
     fontSize: 12,
