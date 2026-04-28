@@ -82,7 +82,25 @@ const pickLocalizedValue = ({
 };
 
 const formatTime = (d: string, locale: string) =>
-  new Date(d).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
+  new Date(d).toLocaleTimeString(locale, {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  });
+
+const formatTimeParts = (d: string) => {
+  const date = new Date(d);
+  const hours = date.getHours();
+  const minutes = date.getMinutes();
+  const hour = String(hours % 12 || 12);
+  const minute = String(minutes).padStart(2, '0');
+  const dayPeriod = hours >= 12 ? 'PM' : 'AM';
+
+  return {
+    time: `${hour}:${minute}`,
+    dayPeriod,
+  };
+};
 
 const getDuration = (start: string, end: string): string => {
   const mins = Math.round((new Date(end).getTime() - new Date(start).getTime()) / 60000);
@@ -227,9 +245,17 @@ const SessionCard: React.FC<{
     <View style={rowStyles.row}>
       {/* Time column */}
       <View style={rowStyles.timeCol}>
-        <Text style={rowStyles.timeText}>
-          {session.startDateTime ? formatTime(session.startDateTime, locale) : '--:--'}
-        </Text>
+        {session.startDateTime ? (() => {
+          const formatted = formatTimeParts(session.startDateTime);
+          return (
+            <>
+              <Text style={rowStyles.timeText}>{formatted.time}</Text>
+              <Text style={rowStyles.timePeriodText}>{formatted.dayPeriod}</Text>
+            </>
+          );
+        })() : (
+          <Text style={rowStyles.timeText}>--:--</Text>
+        )}
       </View>
 
       {/* Timeline line + dot */}
@@ -337,16 +363,27 @@ const rowStyles = StyleSheet.create({
     marginBottom: 4,
   },
   timeCol: {
-    width: 52,
+    width: 58,
     paddingTop: 14,
     alignItems: 'flex-end',
-    paddingRight: 22,
+    paddingRight: 16,
   },
   timeText: {
     fontSize: 12,
     fontWeight: '600',
     color: colors.text.secondary,
     letterSpacing: 0.3,
+    textAlign: 'right',
+    lineHeight: 15,
+  },
+  timePeriodText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: colors.text.secondary,
+    letterSpacing: 0.4,
+    textAlign: 'left',
+    lineHeight: 13,
+    marginTop: -1,
   },
   lineCol: {
     width: 20,
