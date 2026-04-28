@@ -116,11 +116,22 @@ const getDayKey = (d: string) => {
   return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
 };
 
+const capitalize = (str: string, locale: string) => {
+  if (!str) return str;
+  const isEnglish = locale === 'en-US';
+  if (isEnglish) {
+    return str.charAt(0).toUpperCase() + str.slice(1);
+  }
+  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+};
+
 const getDayShortLabel = (d: string, locale: string) =>
   new Date(d).toLocaleDateString(locale, { weekday: 'short', day: 'numeric' });
 
-const getDayFullLabel = (d: string, locale: string) =>
-  new Date(d).toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'short' });
+const getDayFullLabel = (d: string, locale: string) => {
+  const formatted = new Date(d).toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long' });
+  return capitalize(formatted, locale);
+};
 
 const getTodayKey = () => {
   const now = new Date();
@@ -767,7 +778,6 @@ const styles = StyleSheet.create({
   dayLabelText: {
     ...typography.body1,
     fontWeight: '700',
-    textTransform: 'capitalize',
   },
   dayMeta: {
     flexDirection: 'row',

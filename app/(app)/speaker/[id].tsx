@@ -24,6 +24,7 @@ interface SpeakerDetail {
   roleEN?: string;
   organization?: string;
   description?: string;
+  descriptionEN?: string;
   imageUrl?: string;
   country?: string;
 }
@@ -31,6 +32,7 @@ interface SpeakerDetail {
 interface AgendaSession {
   _id: string;
   title: string;
+  titleEn?: string;
   startDateTime?: string;
   endDateTime?: string;
   speakers?: Array<{ _id: string; names: string } | string>;
@@ -46,6 +48,28 @@ interface AgendaDoc {
 
 const formatTime = (d: string) =>
   new Date(d).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+const pickLocalizedValue = ({
+  language,
+  es,
+  en,
+}: {
+  language: string;
+  es?: string;
+  en?: string;
+}) => {
+  const preferEnglish = language?.toLowerCase()?.startsWith('en');
+  return preferEnglish ? (en || es || '') : (es || en || '');
+};
+
+const capitalize = (str: string, locale: string = 'es-CO') => {
+  if (!str) return str;
+  const isEnglish = locale === 'en-US';
+  if (isEnglish) {
+    return str.charAt(0).toUpperCase() + str.slice(1);
+  }
+  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+};
 
 const getInitials = (name: string) =>
   name
@@ -70,6 +94,12 @@ export default function SpeakerScreen() {
     i18n?.language?.startsWith('en')
       ? (speaker?.roleEN || speaker?.role)
       : (speaker?.role || speaker?.roleEN);
+
+  const displayDescription = pickLocalizedValue({
+    language: i18n?.language || 'es',
+    es: speaker?.description,
+    en: speaker?.descriptionEN,
+  });
 
   useEffect(() => {
     if (!activeEventId || !id) {
@@ -184,9 +214,9 @@ export default function SpeakerScreen() {
       )}
 
       {/* Description */}
-      {speaker.description ? (
+      {displayDescription ? (
         <View style={styles.section}>
-          <Text style={styles.description}>{speaker.description}</Text>
+          <Text style={styles.description}>{displayDescription}</Text>
         </View>
       ) : null}
 
@@ -194,18 +224,25 @@ export default function SpeakerScreen() {
       {sessions.length > 0 && (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t('speaker.sessions')}</Text>
-          {sessions.map((session) => (
-            <View key={session._id} style={styles.sessionCard}>
-              <Text style={styles.sessionTitle}>{session.title}</Text>
-              {(session.startDateTime || session.endDateTime) && (
-                <Text style={styles.sessionTime}>
-                  {session.startDateTime ? formatTime(session.startDateTime) : ''}
-                  {session.startDateTime && session.endDateTime ? ' – ' : ''}
-                  {session.endDateTime ? formatTime(session.endDateTime) : ''}
-                </Text>
-              )}
-            </View>
-          ))}
+          {sessions.map((session) => {
+            const displayTitle = pickLocalizedValue({
+              language: i18n?.language || 'es',
+              es: session.title,
+              en: session.titleEn,
+            });
+            return (
+              <View key={session._id} style={styles.sessionCard}>
+                <Text style={styles.sessionTitle}>{displayTitle}</Text>
+                {(session.startDateTime || session.endDateTime) && (
+                  <Text style={styles.sessionTime}>
+                    {session.startDateTime ? formatTime(session.startDateTime) : ''}
+                    {session.startDateTime && session.endDateTime ? ' – ' : ''}
+                    {session.endDateTime ? formatTime(session.endDateTime) : ''}
+                  </Text>
+                )}
+              </View>
+            );
+          })}
         </View>
       )}
 

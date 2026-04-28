@@ -18,10 +18,13 @@ import { get, post, del } from '@/src/core';
 interface Session {
   _id: string;
   title: string;
+  titleEn?: string;
   startDateTime: string;
   endDateTime: string;
   room?: string;
+  roomEn?: string;
   typeSession?: string;
+  typeSessionEn?: string;
   requiresAttendance?: boolean;
 }
 
@@ -30,12 +33,17 @@ interface AgendaDoc {
   sessions: Session[];
   isPublished: boolean;
   dressCode?: string;
+  dressCodeEn?: string;
   room?: string;
 }
 
 interface AttendanceSession extends Session {
   agendaDressCode?: string;
   agendaRoom?: string;
+  displayTitle: string;
+  displayRoom?: string;
+  displayTypeSession?: string;
+  displayDressCode?: string;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -43,10 +51,37 @@ interface AttendanceSession extends Session {
 const formatTime = (d: string) =>
   new Date(d).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-const formatDateHeader = (d: string) =>
-  new Date(d).toLocaleDateString('es-CO', {
-    weekday: 'long', day: 'numeric', month: 'short',
+const capitalize = (str: string, locale: string) => {
+  if (!str) return str;
+  const isEnglish = locale === 'en-US';
+  if (isEnglish) {
+    return str.charAt(0).toUpperCase() + str.slice(1);
+  }
+  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+};
+
+const getLocaleFromLanguage = (lang: string) =>
+  lang.toLowerCase().startsWith('en') ? 'en-US' : 'es-CO';
+
+const pickLocalizedValue = ({
+  language,
+  es,
+  en,
+}: {
+  language: string;
+  es?: string;
+  en?: string;
+}) => {
+  const preferEnglish = language.toLowerCase().startsWith('en');
+  return preferEnglish ? (en || es || '') : (es || en || '');
+};
+
+const formatDateHeader = (d: string, locale: string) => {
+  const formatted = new Date(d).toLocaleDateString(locale, {
+    weekday: 'long', day: 'numeric', month: 'long',
   });
+  return capitalize(formatted, locale);
+};
 
 const getDateKey = (d: string) => {
   const date = new Date(d);
@@ -89,13 +124,13 @@ const SessionRow: React.FC<{
 
       {/* Center: info */}
       <View style={styles.rowInfo}>
-        <Text style={styles.rowTitle} numberOfLines={2}>{session.title}</Text>
-        {!!(session.room || session.agendaRoom) && (
-          <Text style={styles.rowMeta}>📍 {session.room || session.agendaRoom}</Text>
+        <Text style={styles.rowTitle} numberOfLines={2}>{session.displayTitle}</Text>
+        {!!(session.displayRoom || session.agendaRoom) && (
+          <Text style={styles.rowMeta}>📍 {session.displayRoom || session.agendaRoom}</Text>
         )}
-        {!!session.typeSession && (
+        {!!session.displayTypeSession && (
           <View style={[styles.typePill, { backgroundColor: primary + '18' }]}>
-            <Text style={[styles.typePillText, { color: primary }]}>{session.typeSession}</Text>
+            <Text style={[styles.typePillText, { color: primary }]}>{session.displayTypeSession}</Text>
           </View>
         )}
       </View>
@@ -122,9 +157,10 @@ const SessionRow: React.FC<{
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 
 export const AttendanceScreen: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { activeEventId } = useEvent();
   const bc = useBrandedColors();
+  const locale = getLocaleFromLanguage(i18n.language);
 
   const [sessions, setSessions] = useState<AttendanceSession[]>([]);
   const [myAttendances, setMyAttendances] = useState<string[]>([]);
@@ -161,6 +197,26 @@ export const AttendanceScreen: React.FC = () => {
               ...s,
               agendaDressCode: a.dressCode,
               agendaRoom: a.room,
+              displayTitle: pickLocalizedValue({
+                language: i18n.language,
+                es: s.title,
+                en: s.titleEn,
+              }),
+              displayRoom: pickLocalizedValue({
+                language: i18n.language,
+                es: s.room,
+                en: s.roomEn,
+              }),
+              displayTypeSession: pickLocalizedValue({
+                language: i18n.language,
+                es: s.typeSession,
+                en: s.typeSessionEn,
+              }),
+              displayDressCode: pickLocalizedValue({
+                language: i18n.language,
+                es: a.dressCode,
+                en: a.dressCodeEn,
+              }),
             }))
         )
         .sort((a, b) =>
@@ -287,11 +343,11 @@ export const AttendanceScreen: React.FC = () => {
             <View style={styles.dayHeader}>
               <Text style={styles.dayHeaderText}>
                 {first.startDateTime && key !== 'sin-fecha'
-                  ? formatDateHeader(first.startDateTime)
+                  ? formatDateHeader(first.startDateTime, locale)
                   : 'Sin fecha'}
               </Text>
-              {!!first.agendaDressCode && (
-                <Text style={styles.dayMeta}>👔 {first.agendaDressCode}</Text>
+              {!!first.displayDressCode && (
+                <Text style={styles.dayMeta}>👔 {first.displayDressCode}</Text>
               )}
             </View>
 
@@ -357,7 +413,6 @@ const styles = StyleSheet.create({
   dayHeaderText: {
     ...typography.caption,
     color: colors.text.secondary,
-    textTransform: 'capitalize',
     fontWeight: '700',
     letterSpacing: 0.5,
   },
