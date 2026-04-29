@@ -349,6 +349,18 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const handleAuthError = (error: any, customMessage?: string) => {
     console.error("Error detallado:", error);
     
+    // Capturar errores HTTP del backend (403, 404, etc.)
+    const httpStatus = error.response?.status;
+    if (httpStatus === 403) {
+      const errorMessage = "El acceso a esta aplicación es único y exclusivo para personas inscritas a la organización.\n\nComuníquese con el organizador para tener acceso o valide que está ingresando correctamente el correo inscrito por la organización.";
+      Alert.alert("Acceso Restringido", errorMessage);
+      setAuthState((prevState) => ({
+        ...prevState,
+        authError: errorMessage,
+      }));
+      return;
+    }
+    
     const errorCode = error.code as keyof typeof errorMessages;
     const errorMessages: { [key: string]: string } = {
       "auth/wrong-password": "La contraseña es incorrecta.",

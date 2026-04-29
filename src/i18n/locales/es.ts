@@ -148,7 +148,7 @@ const es = {
   auth: {
     login: {
       title: "Bienvenido",
-      subtitleOtp: "Ingresa tu correo y te enviaremos un código de acceso",
+      subtitleOtp: "Ingresa el correo con el que te registraste",
       subtitlePassword: "¿Ya te registraste? Inicia sesión para continuar",
       emailPlaceholder: "Correo electrónico",
       passwordPlaceholder: "Contraseña",
