@@ -83,18 +83,25 @@ const pickLocalizedValue = ({
 
 const formatTime = (d: string, locale: string) =>
   new Date(d).toLocaleTimeString(locale, {
+    timeZone: 'America/Bogota',
     hour: 'numeric',
     minute: '2-digit',
     hour12: true,
   });
 
 const formatTimeParts = (d: string) => {
-  const date = new Date(d);
-  const hours = date.getHours();
-  const minutes = date.getMinutes();
-  const hour = String(hours % 12 || 12);
-  const minute = String(minutes).padStart(2, '0');
-  const dayPeriod = hours >= 12 ? 'PM' : 'AM';
+  // Obtener la hora en zona horaria de Colombia
+  const formatter = new Intl.DateTimeFormat('es-CO', {
+    timeZone: 'America/Bogota',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true,
+  });
+  
+  const parts = formatter.formatToParts(new Date(d));
+  const hour = parts.find(p => p.type === 'hour')?.value || '12';
+  const minute = parts.find(p => p.type === 'minute')?.value || '00';
+  const dayPeriod = parts.find(p => p.type === 'dayPeriod')?.value || 'AM';
 
   return {
     time: `${hour}:${minute}`,
