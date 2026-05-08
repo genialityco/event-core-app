@@ -14,6 +14,8 @@ import {
   Platform,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import * as FileSystem from 'expo-file-system/legacy';
+import * as Sharing from 'expo-sharing';
 import { ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { storage, auth } from '@/services/firebaseConfig';
 import { useTranslation } from '@/src/i18n';
@@ -114,6 +116,23 @@ export const PhotosScreen: React.FC = () => {
       Alert.alert(t('photos.uploadError'));
     } finally {
       setUploading(false);
+    }
+  };
+
+  const handleDownload = async (photo: Photo) => {
+    try {
+      const ext = (photo.storageRef.split('.').pop() || 'jpg').split('?')[0];
+      const fileName = `photo_${photo._id}.${ext}`;
+      const target = FileSystem.documentDirectory + fileName;
+      const { uri } = await FileSystem.downloadAsync(photo.imageUrl, target);
+
+      if (!(await Sharing.isAvailableAsync())) {
+        Alert.alert(t('photos.downloadError'));
+        return;
+      }
+      await Sharing.shareAsync(uri, { mimeType: 'image/jpeg', dialogTitle: t('photos.title') });
+    } catch {
+      Alert.alert(t('photos.downloadError'));
     }
   };
 
@@ -229,12 +248,18 @@ export const PhotosScreen: React.FC = () => {
                 {!!selected.userName && (
                   <Text style={styles.modalName}>{selected.userName}</Text>
                 )}
+                <TouchableOpacity
+                  style={styles.modalActionBtn}
+                  onPress={() => handleDownload(selected)}
+                >
+                  <Text style={styles.modalActionText}>⬇</Text>
+                </TouchableOpacity>
                 {selected.userId === userId && (
                   <TouchableOpacity
-                    style={styles.modalDeleteBtn}
+                    style={styles.modalActionBtn}
                     onPress={() => handleDelete(selected)}
                   >
-                    <Text style={styles.modalDeleteText}>🗑</Text>
+                    <Text style={styles.modalActionText}>🗑</Text>
                   </TouchableOpacity>
                 )}
               </View>
@@ -331,8 +356,9 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   modalName: { ...typography.body2, color: '#fff', flex: 1 },
-  modalDeleteBtn: {
+  modalActionBtn: {
     padding: spacing.sm,
+    marginLeft: spacing.sm,
   },
-  modalDeleteText: { fontSize: 22 },
+  modalActionText: { fontSize: 22, color: '#fff' },
 });

@@ -131,6 +131,7 @@ const es = {
     deleteYes: "Eliminar",
     deleteNo: "Cancelar",
     deleteError: "Error al eliminar la foto",
+    downloadError: "No se pudo descargar la foto",
     permissionDenied: "Se necesita permiso para acceder a la galería",
   },
 

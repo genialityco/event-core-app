@@ -118,6 +118,7 @@ const en = {
     deleteYes: "Delete",
     deleteNo: "Cancel",
     deleteError: "Error deleting photo",
+    downloadError: "Could not download photo",
     permissionDenied: "Permission required to access gallery",
   },
 
